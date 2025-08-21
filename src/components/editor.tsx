@@ -253,7 +253,7 @@ export function Editor({ note }: EditorProps) {
       <div className="space-y-6 p-4 border-b">
         <div className="space-y-2">
             <Label htmlFor="projectFeatures">Features & Requirements</Label>
-            <Textarea id="projectFeatures" value={projectFeatures} onChange={(e) => setProjectFeatures(e.target.value)} placeholder="- Feature A: must do X&#10;- Requirement B: needs Y" className="min-h-[150px] list-disc" />
+            <Textarea id="projectFeatures" value={projectFeatures} onChange={(e) => setProjectFeatures(e.target.value)} placeholder="- Feature A: must do X&#10;- Requirement B: needs Y" className="min-h-[150px]" />
         </div>
         <div className="space-y-2">
             <Label htmlFor="projectIdeas">Brainstorming & Ideas</Label>
