@@ -11,8 +11,7 @@ type NotePageProps = {
   params: { noteId: string };
 };
 
-export default function NotePage({ params }: NotePageProps) {
-  const { noteId } = params;
+export default function NotePage({ params: { noteId } }: NotePageProps) {
   const { user } = useAuth();
   const [note, setNote] = useState<Note | null>(null);
   const [loading, setLoading] = useState(true);
