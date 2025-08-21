@@ -68,7 +68,7 @@ export function Editor({ note }: EditorProps) {
   
   // Meeting specific state
   const [meetingDate, setMeetingDate] = useState<Date | undefined>(
-    note?.meetingDate instanceof Date ? note.meetingDate : undefined
+    note?.meetingDate instanceof Date ? note.meetingDate : (note?.meetingDate as any)?.toDate() ?? undefined
   );
   const [meetingLink, setMeetingLink] = useState(note?.meetingLink || '');
   const [discussionTopics, setDiscussionTopics] = useState(note?.discussionTopics || '');
@@ -240,11 +240,11 @@ export function Editor({ note }: EditorProps) {
         </div>
         <div className="space-y-2">
             <Label htmlFor="discussionTopics">Discussion Topics</Label>
-            <Textarea id="discussionTopics" value={discussionTopics} onChange={(e) => setDiscussionTopics(e.target.value)} placeholder="- Topic 1&#10;- Topic 2" className="min-h-[120px] list-disc" />
+            <Textarea id="discussionTopics" value={discussionTopics} onChange={(e) => setDiscussionTopics(e.target.value)} placeholder="- Topic 1&#10;- Topic 2" className="min-h-[120px] checklist" />
         </div>
         <div className="space-y-2">
             <Label htmlFor="actionItems">Action Items</Label>
-            <Textarea id="actionItems" value={actionItems} onChange={(e) => setActionItems(e.target.value)} placeholder="- Follow up with..." className="min-h-[120px] list-disc" />
+            <Textarea id="actionItems" value={actionItems} onChange={(e) => setActionItems(e.target.value)} placeholder="- Follow up with..." className="min-h-[120px] checklist" />
         </div>
     </div>
   );
@@ -253,7 +253,7 @@ export function Editor({ note }: EditorProps) {
       <div className="space-y-6 p-4 border-b">
         <div className="space-y-2">
             <Label htmlFor="projectFeatures">Features & Requirements</Label>
-            <Textarea id="projectFeatures" value={projectFeatures} onChange={(e) => setProjectFeatures(e.target.value)} placeholder="- Feature A: must do X&#10;- Requirement B: needs Y" className="min-h-[150px]" />
+            <Textarea id="projectFeatures" value={projectFeatures} onChange={(e) => setProjectFeatures(e.target.value)} placeholder="- Feature A: must do X&#10;- Requirement B: needs Y" className="min-h-[150px] checklist" />
         </div>
         <div className="space-y-2">
             <Label htmlFor="projectIdeas">Brainstorming & Ideas</Label>
@@ -290,7 +290,7 @@ export function Editor({ note }: EditorProps) {
       {/* Grocery List */}
       <div className="space-y-2 p-4 rounded-lg border bg-card/50">
         <h3 className="font-semibold flex items-center gap-2"><ShoppingCart className="w-5 h-5 text-primary" /> Grocery List</h3>
-        <Textarea id="groceryList" value={groceryList} onChange={(e) => setGroceryList(e.target.value)} placeholder="- Milk&#10;- Bread&#10;- Eggs" className="min-h-[150px] list-disc" />
+        <Textarea id="groceryList" value={groceryList} onChange={(e) => setGroceryList(e.target.value)} placeholder="- Milk&#10;- Bread&#10;- Eggs" className="min-h-[150px] checklist" />
       </div>
 
       {/* Collections */}
@@ -302,7 +302,7 @@ export function Editor({ note }: EditorProps) {
         </div>
         <div className="space-y-2">
             <Label htmlFor="collectionItems">Items</Label>
-            <Textarea id="collectionItems" value={collectionItems} onChange={(e) => setCollectionItems(e.target.value)} placeholder="- Item 1&#10;- Item 2" className="min-h-[150px] list-disc" />
+            <Textarea id="collectionItems" value={collectionItems} onChange={(e) => setCollectionItems(e.target.value)} placeholder="- Item 1&#10;- Item 2" className="min-h-[150px] checklist" />
         </div>
       </div>
     </div>
