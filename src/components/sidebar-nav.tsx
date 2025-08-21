@@ -1,3 +1,4 @@
+
 import Link from 'next/link';
 import {
   Notebook,
@@ -6,6 +7,7 @@ import {
   Settings,
   BrainCircuit,
   File,
+  Home,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -18,7 +20,8 @@ import {
 } from '@/components/ui/sidebar';
 
 const menuItems = [
-  { href: '/app', icon: <File />, label: 'All Notes' },
+  { href: '/app', icon: <Home />, label: 'Dashboard' },
+  { href: '/app/notes', icon: <File />, label: 'All Notes' },
   { href: '/app/notebooks', icon: <Notebook />, label: 'Notebooks' },
   { href: '/app/tags', icon: <Tag />, label: 'Tags' },
   { href: '/app/archive', icon: <Archive />, label: 'Archive' },
@@ -41,7 +44,8 @@ export function SidebarNav() {
                 asChild
                 tooltip={item.label}
                 // A real implementation would use usePathname() to check for active state
-                isActive={item.href === '/app'}
+                // For now, we'll just show the first item as active for demonstration
+                isActive={item.href === '/app/notes'} 
               >
                 <Link href={item.href}>
                   {item.icon}
