@@ -1,9 +1,9 @@
-import { NoteList } from '@/components/note-list';
+import { Dashboard } from '@/components/dashboard';
 
 export default function AppPage() {
   return (
     <div>
-      <NoteList />
+      <Dashboard />
     </div>
   );
 }
