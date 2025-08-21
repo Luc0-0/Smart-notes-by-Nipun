@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -19,10 +20,14 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/firebase/auth-provider';
 import { signOut } from '@/lib/firebase/auth';
+import { useSubscription } from '@/hooks/use-subscription';
+import { Badge } from '@/components/ui/badge';
+import { Sparkles } from 'lucide-react';
 
 export function UserNav() {
   const { user } = useAuth();
   const router = useRouter();
+  const { subscription } = useSubscription();
 
   const handleSignOut = async () => {
     await signOut();
@@ -55,7 +60,14 @@ export function UserNav() {
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{user.displayName ?? 'User'}</p>
+             <div className="flex items-center justify-between">
+              <p className="text-sm font-medium leading-none">{user.displayName ?? 'User'}</p>
+              {subscription?.role === 'pro' && (
+                <Badge variant="secondary" className="text-xs text-primary border-primary/50">
+                  <Sparkles className="w-3 h-3 mr-1" /> Pro
+                </Badge>
+              )}
+            </div>
             <p className="text-xs leading-none text-muted-foreground">
               {user.email}
             </p>
@@ -66,7 +78,9 @@ export function UserNav() {
           <DropdownMenuItem asChild>
             <Link href="/app/profile">Profile</Link>
           </DropdownMenuItem>
-          <DropdownMenuItem disabled>Billing</DropdownMenuItem>
+           <DropdownMenuItem asChild>
+            <Link href="/app/pricing">Billing</Link>
+          </DropdownMenuItem>
           <DropdownMenuItem asChild>
             <Link href="/app/settings">Settings</Link>
           </DropdownMenuItem>

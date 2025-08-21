@@ -2,17 +2,23 @@
 'use client';
 
 import Link from 'next/link';
-import { useSearchParams, usePathname } from 'next/navigation';
+import { useSearchParams, usePathname, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, Book, Briefcase, BrainCircuit, ShoppingCart, Tag, Archive } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { PlusCircle, Book, Briefcase, BrainCircuit, ShoppingCart, Tag, Archive, Sparkles, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/lib/firebase/auth-provider';
-import { getNotes } from '@/lib/firebase/firestore';
+import { getNotes, addNote } from '@/lib/firebase/firestore';
 import type { Note } from '@/lib/types';
 import { useEffect, useState, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
+import { generateNoteStarter } from '@/ai/flows/note-starter-flow';
+import { useSubscription } from '@/hooks/use-subscription';
+import { useToast } from '@/hooks/use-toast';
 
 const notebooks = [
   { id: 'general', title: 'General', icon: <Book /> },
@@ -20,6 +26,105 @@ const notebooks = [
   { id: 'meetings', title: 'Meetings', icon: <BrainCircuit /> },
   { id: 'personal', title: 'Personal', icon: <ShoppingCart /> },
 ];
+
+function NoteStarterDialog() {
+  const { user } = useAuth();
+  const router = useRouter();
+  const { toast } = useToast();
+  const { subscription } = useSubscription();
+  const [prompt, setPrompt] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const isPro = subscription?.role === 'pro';
+
+  const handleGenerate = async () => {
+    if (!user || !prompt) return;
+
+    if (!isPro) {
+      toast({
+        variant: 'destructive',
+        title: 'Pro Feature',
+        description: 'AI Note Starters are only available on the Pro plan.',
+      });
+      router.push('/app/pricing');
+      return;
+    }
+    
+    setIsLoading(true);
+    toast({ title: 'Generating your note starter...' });
+    try {
+      const { title, content } = await generateNoteStarter({ prompt });
+      const { id: newNoteId, error } = await addNote({
+        title,
+        content,
+        userId: user.uid,
+        notebookId: 'general',
+        tags: ['ai-generated'],
+        isArchived: false,
+      });
+
+      if (error || !newNoteId) {
+        throw new Error('Failed to save the generated note.');
+      }
+
+      toast({ title: 'Note starter created!', description: 'Redirecting to your new note...' });
+      setIsOpen(false);
+      setPrompt('');
+      router.push(`/app/notes/${newNoteId}`);
+
+    } catch (error) {
+      console.error('Note starter generation failed:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Generation Failed',
+        description: 'Could not generate your note starter. Please try again.',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  return (
+     <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline">
+            <Sparkles className="mr-2 h-4 w-4 text-primary" />
+            New with AI
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>AI Note Starter</DialogTitle>
+          <DialogDescription>
+            Describe the note you want to create, and AI will generate a structured starter for you.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="py-4">
+            <Label htmlFor="prompt" className="sr-only">Prompt</Label>
+            <Input 
+                id="prompt"
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="e.g., A project plan for a new mobile app" 
+            />
+             {!isPro && (
+              <p className="text-sm text-yellow-600 mt-2">
+                This is a Pro feature. <Link href="/app/pricing" className="underline font-medium">Upgrade to unlock</Link>.
+              </p>
+            )}
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => setIsOpen(false)}>Cancel</Button>
+          <Button onClick={handleGenerate} disabled={isLoading || !prompt}>
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Generate
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 
 type NoteListProps = {
   isArchive?: boolean;
@@ -144,13 +249,16 @@ export function NoteList({ isArchive = false, searchQuery = '' }: NoteListProps)
                     <h1 className="text-3xl font-bold font-headline">{pageTitle}</h1>
                     <p className="text-muted-foreground">{pageDescription}</p>
                 </div>
-                {!isArchive && (
-                    <Button asChild>
-                    <Link href={`/app/notes/new${notebookId ? `?notebook=${notebookId}` : ''}`}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        New Note
-                    </Link>
-                    </Button>
+                 {!isArchive && (
+                    <div className="flex items-center gap-2">
+                        <NoteStarterDialog />
+                        <Button asChild>
+                        <Link href={`/app/notes/new${notebookId ? `?notebook=${notebookId}` : ''}`}>
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            New Note
+                        </Link>
+                        </Button>
+                    </div>
                 )}
             </div>
         
