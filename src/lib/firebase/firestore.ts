@@ -59,7 +59,7 @@ export const getNote = async (noteId: string): Promise<Note | null> => {
         ...data,
         createdAt: data.createdAt?.toDate() ?? new Date(),
         updatedAt: data.updatedAt?.toDate() ?? new Date(),
-        meetingDate: data.meetingDate?.toDate(),
+        meetingDate: data.meetingDate ? data.meetingDate.toDate() : undefined,
       } as Note;
       return note;
     } else {
@@ -84,8 +84,9 @@ export const getNotes = async (userId: string) => {
         notes.push({ 
             id: doc.id,
             ...data,
-            createdAt: data.createdAt,
-            updatedAt: data.updatedAt,
+            createdAt: data.createdAt?.toDate() ?? new Date(),
+            updatedAt: data.updatedAt?.toDate() ?? new Date(),
+            meetingDate: data.meetingDate ? data.meetingDate.toDate() : undefined,
          } as Note);
     });
     return notes;
