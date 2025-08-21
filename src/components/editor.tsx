@@ -15,7 +15,7 @@ import {
   ChevronDown,
   Loader2,
   Save,
-  CalendarIcon,
+  Calendar as CalendarIcon,
   Link as LinkIcon,
   Book,
   ShoppingCart,

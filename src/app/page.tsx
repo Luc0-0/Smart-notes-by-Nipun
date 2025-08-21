@@ -106,7 +106,6 @@ export default function LandingPage() {
       <footer className="py-6 border-t">
         <div className="container mx-auto px-4 md:px-6 text-center text-foreground/60">
           <p>&copy; {year} Smart Notes. All rights reserved.</p>
-          <p>Designed by Nipun Sujesh</p>
         </div>
       </footer>
     </div>

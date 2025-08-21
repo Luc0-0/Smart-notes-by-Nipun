@@ -72,7 +72,7 @@ export function NoteList({ isArchive = false, searchQuery = '' }: NoteListProps)
     const getPageDetails = () => {
       if (isArchive) return { title: 'Archive', description: "Archived notes.", icon: <Archive /> };
       if (isTagsPage && !tag) return { title: 'Tags', description: "Browse your notes by tag.", icon: <Tag /> };
-      if (tag) return { title: `Tagged: #${tag}`, description: `Notes tagged with "${tag}".`, icon: <Tag /> };
+      if (tag) return { title: `#${tag}`, description: `Notes tagged with "${tag}".`, icon: <Tag /> };
       const currentNotebook = notebookId ? notebooks.find(n => n.id === notebookId) : null;
       if (currentNotebook) return { title: `${currentNotebook.title} Notes`, description: `Notes from your '${currentNotebook.title}' notebook.`, icon: currentNotebook.icon };
       return { title: 'All Notes', description: "Here's a list of all your notes.", icon: <Book /> };
@@ -120,7 +120,7 @@ export function NoteList({ isArchive = false, searchQuery = '' }: NoteListProps)
                 {allTags.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
                         {allTags.map(t => (
-                            <Button key={t} variant="ghost" asChild className="border">
+                            <Button key={t} variant="outline" asChild className="transform transition-transform duration-200 hover:scale-105">
                                 <Link href={`/app/tags?tag=${t}`}>
                                     <Tag className="mr-2 h-4 w-4" /> {t}
                                 </Link>
