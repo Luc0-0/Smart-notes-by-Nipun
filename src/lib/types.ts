@@ -1,5 +1,7 @@
 
 import type { Timestamp } from 'firebase/firestore';
+import type { ChecklistItemType } from '@/components/ui/checklist';
+
 
 export type Note = {
   id: string;
@@ -13,11 +15,11 @@ export type Note = {
   // Meeting-specific fields
   meetingDate?: Timestamp | Date;
   meetingLink?: string;
-  discussionTopics?: string;
-  actionItems?: string;
+  discussionTopics?: ChecklistItemType[];
+  actionItems?: ChecklistItemType[];
   
   // Project-specific fields
-  projectFeatures?: string;
+  projectFeatures?: ChecklistItemType[];
   projectIdeas?: string;
   projectTimeline?: string;
 
@@ -25,9 +27,9 @@ export type Note = {
   habitName?: string;
   habitGoal?: string;
   habitStreak?: number;
-  groceryList?: string;
+  groceryList?: ChecklistItemType[];
   collectionType?: string;
-  collectionItems?: string;
+  collectionItems?: ChecklistItemType[];
 };
 
 export type Notebook = {

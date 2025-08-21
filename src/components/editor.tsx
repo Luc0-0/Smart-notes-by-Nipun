@@ -43,6 +43,7 @@ import { summarizeText } from '@/ai/flows/summarize-flow';
 import { generateOutline } from '@/ai/flows/outline-flow';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { Checklist, type ChecklistItemType } from '@/components/ui/checklist';
 
 type EditorProps = {
   note?: Note | null;
@@ -71,11 +72,11 @@ export function Editor({ note }: EditorProps) {
     note?.meetingDate instanceof Date ? note.meetingDate : (note?.meetingDate as any)?.toDate() ?? undefined
   );
   const [meetingLink, setMeetingLink] = useState(note?.meetingLink || '');
-  const [discussionTopics, setDiscussionTopics] = useState(note?.discussionTopics || '');
-  const [actionItems, setActionItems] = useState(note?.actionItems || '');
+  const [discussionTopics, setDiscussionTopics] = useState<ChecklistItemType[]>(note?.discussionTopics || []);
+  const [actionItems, setActionItems] = useState<ChecklistItemType[]>(note?.actionItems || []);
 
   // Project specific state
-  const [projectFeatures, setProjectFeatures] = useState(note?.projectFeatures || '');
+  const [projectFeatures, setProjectFeatures] = useState<ChecklistItemType[]>(note?.projectFeatures || []);
   const [projectIdeas, setProjectIdeas] = useState(note?.projectIdeas || '');
   const [projectTimeline, setProjectTimeline] = useState(note?.projectTimeline || '');
 
@@ -83,9 +84,9 @@ export function Editor({ note }: EditorProps) {
   const [habitName, setHabitName] = useState(note?.habitName || '');
   const [habitGoal, setHabitGoal] = useState(note?.habitGoal || '');
   const [habitStreak, setHabitStreak] = useState(note?.habitStreak || 0);
-  const [groceryList, setGroceryList] = useState(note?.groceryList || '');
+  const [groceryList, setGroceryList] = useState<ChecklistItemType[]>(note?.groceryList || []);
   const [collectionType, setCollectionType] = useState(note?.collectionType || '');
-  const [collectionItems, setCollectionItems] = useState(note?.collectionItems || '');
+  const [collectionItems, setCollectionItems] = useState<ChecklistItemType[]>(note?.collectionItems || []);
 
 
   const [notebookId, setNotebookId] = useState<Note['notebookId']>(getInitialNotebookId());
@@ -97,7 +98,7 @@ export function Editor({ note }: EditorProps) {
   }, [note, searchParams]);
   
   const handleSummarize = async () => {
-    const textToSummarize = content || discussionTopics || projectFeatures;
+    const textToSummarize = content || projectIdeas;
     if (!textToSummarize) {
       toast({
         variant: 'destructive',
@@ -240,11 +241,11 @@ export function Editor({ note }: EditorProps) {
         </div>
         <div className="space-y-2">
             <Label htmlFor="discussionTopics">Discussion Topics</Label>
-            <Textarea id="discussionTopics" value={discussionTopics} onChange={(e) => setDiscussionTopics(e.target.value)} placeholder="- Topic 1&#10;- Topic 2" className="min-h-[120px] checklist" />
+            <Checklist items={discussionTopics} onChange={setDiscussionTopics} placeholder="Add a topic..." />
         </div>
         <div className="space-y-2">
             <Label htmlFor="actionItems">Action Items</Label>
-            <Textarea id="actionItems" value={actionItems} onChange={(e) => setActionItems(e.target.value)} placeholder="- Follow up with..." className="min-h-[120px] checklist" />
+            <Checklist items={actionItems} onChange={setActionItems} placeholder="Add an action item..." />
         </div>
     </div>
   );
@@ -253,7 +254,7 @@ export function Editor({ note }: EditorProps) {
       <div className="space-y-6 p-4 border-b">
         <div className="space-y-2">
             <Label htmlFor="projectFeatures">Features & Requirements</Label>
-            <Textarea id="projectFeatures" value={projectFeatures} onChange={(e) => setProjectFeatures(e.target.value)} placeholder="- Feature A: must do X&#10;- Requirement B: needs Y" className="min-h-[150px] checklist" />
+            <Checklist items={projectFeatures} onChange={setProjectFeatures} placeholder="Add a feature or requirement..." />
         </div>
         <div className="space-y-2">
             <Label htmlFor="projectIdeas">Brainstorming & Ideas</Label>
@@ -290,7 +291,7 @@ export function Editor({ note }: EditorProps) {
       {/* Grocery List */}
       <div className="space-y-2 p-4 rounded-lg border bg-card/50">
         <h3 className="font-semibold flex items-center gap-2"><ShoppingCart className="w-5 h-5 text-primary" /> Grocery List</h3>
-        <Textarea id="groceryList" value={groceryList} onChange={(e) => setGroceryList(e.target.value)} placeholder="- Milk&#10;- Bread&#10;- Eggs" className="min-h-[150px] checklist" />
+        <Checklist items={groceryList} onChange={setGroceryList} placeholder="Add a grocery item..." />
       </div>
 
       {/* Collections */}
@@ -302,7 +303,7 @@ export function Editor({ note }: EditorProps) {
         </div>
         <div className="space-y-2">
             <Label htmlFor="collectionItems">Items</Label>
-            <Textarea id="collectionItems" value={collectionItems} onChange={(e) => setCollectionItems(e.target.value)} placeholder="- Item 1&#10;- Item 2" className="min-h-[150px] checklist" />
+            <Checklist items={collectionItems} onChange={setCollectionItems} placeholder="Add a collection item..." />
         </div>
       </div>
     </div>
@@ -336,7 +337,7 @@ export function Editor({ note }: EditorProps) {
 
 
         <div className="flex items-center justify-between gap-1 p-2 border-b sticky top-0 bg-card/80 backdrop-blur-sm z-10">
-          <div>
+          <div className="flex-1">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" disabled={isAiLoading || isSaving}>
@@ -363,7 +364,7 @@ export function Editor({ note }: EditorProps) {
             </DropdownMenu>
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 justify-end">
             <Separator orientation="vertical" className="h-6 mx-2" />
 
             <Button variant="ghost" size="icon" className="h-8 w-8">
