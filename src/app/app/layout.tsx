@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import React from 'react';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { SidebarNav } from '@/components/sidebar-nav';
 import { Header } from '@/components/header';
