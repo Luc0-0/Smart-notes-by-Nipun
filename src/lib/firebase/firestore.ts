@@ -57,9 +57,9 @@ export const getNote = async (noteId: string): Promise<Note | null> => {
       const note: Note = {
         id: docSnap.id,
         ...data,
-        createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
-        updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date(),
-        meetingDate: data.meetingDate instanceof Timestamp ? data.meetingDate.toDate() : undefined,
+        createdAt: data.createdAt?.toDate() ?? new Date(),
+        updatedAt: data.updatedAt?.toDate() ?? new Date(),
+        meetingDate: data.meetingDate?.toDate(),
       } as Note;
       return note;
     } else {
