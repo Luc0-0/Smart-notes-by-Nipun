@@ -17,6 +17,9 @@ import {
   Save,
   CalendarIcon,
   Link as LinkIcon,
+  Book,
+  ShoppingCart,
+  Flame,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -65,7 +68,7 @@ export function Editor({ note }: EditorProps) {
   
   // Meeting specific state
   const [meetingDate, setMeetingDate] = useState<Date | undefined>(
-    note?.meetingDate?.toDate()
+    note?.meetingDate instanceof Date ? note.meetingDate : undefined
   );
   const [meetingLink, setMeetingLink] = useState(note?.meetingLink || '');
   const [discussionTopics, setDiscussionTopics] = useState(note?.discussionTopics || '');
@@ -75,6 +78,15 @@ export function Editor({ note }: EditorProps) {
   const [projectFeatures, setProjectFeatures] = useState(note?.projectFeatures || '');
   const [projectIdeas, setProjectIdeas] = useState(note?.projectIdeas || '');
   const [projectTimeline, setProjectTimeline] = useState(note?.projectTimeline || '');
+
+  // Personal specific state
+  const [habitName, setHabitName] = useState(note?.habitName || '');
+  const [habitGoal, setHabitGoal] = useState(note?.habitGoal || '');
+  const [habitStreak, setHabitStreak] = useState(note?.habitStreak || 0);
+  const [groceryList, setGroceryList] = useState(note?.groceryList || '');
+  const [collectionType, setCollectionType] = useState(note?.collectionType || '');
+  const [collectionItems, setCollectionItems] = useState(note?.collectionItems || '');
+
 
   const [notebookId, setNotebookId] = useState<Note['notebookId']>(getInitialNotebookId());
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -165,6 +177,13 @@ export function Editor({ note }: EditorProps) {
         projectFeatures,
         projectIdeas,
         projectTimeline,
+        // Personal fields
+        habitName,
+        habitGoal,
+        habitStreak,
+        groceryList,
+        collectionType,
+        collectionItems,
     };
     
     try {
@@ -221,11 +240,11 @@ export function Editor({ note }: EditorProps) {
         </div>
         <div className="space-y-2">
             <Label htmlFor="discussionTopics">Discussion Topics</Label>
-            <Textarea id="discussionTopics" value={discussionTopics} onChange={(e) => setDiscussionTopics(e.target.value)} placeholder="Topics to cover..." className="min-h-[120px]" />
+            <Textarea id="discussionTopics" value={discussionTopics} onChange={(e) => setDiscussionTopics(e.target.value)} placeholder="- Topic 1&#10;- Topic 2" className="min-h-[120px] list-disc" />
         </div>
         <div className="space-y-2">
             <Label htmlFor="actionItems">Action Items</Label>
-            <Textarea id="actionItems" value={actionItems} onChange={(e) => setActionItems(e.target.value)} placeholder="- Follow up with..." className="min-h-[120px]" />
+            <Textarea id="actionItems" value={actionItems} onChange={(e) => setActionItems(e.target.value)} placeholder="- Follow up with..." className="min-h-[120px] list-disc" />
         </div>
     </div>
   );
@@ -234,7 +253,7 @@ export function Editor({ note }: EditorProps) {
       <div className="space-y-6 p-4 border-b">
         <div className="space-y-2">
             <Label htmlFor="projectFeatures">Features & Requirements</Label>
-            <Textarea id="projectFeatures" value={projectFeatures} onChange={(e) => setProjectFeatures(e.target.value)} placeholder="List key features and technical requirements..." className="min-h-[150px]" />
+            <Textarea id="projectFeatures" value={projectFeatures} onChange={(e) => setProjectFeatures(e.target.value)} placeholder="- Feature A: must do X&#10;- Requirement B: needs Y" className="min-h-[150px] list-disc" />
         </div>
         <div className="space-y-2">
             <Label htmlFor="projectIdeas">Brainstorming & Ideas</Label>
@@ -246,6 +265,49 @@ export function Editor({ note }: EditorProps) {
         </div>
     </div>
   );
+  
+  const renderPersonalFields = () => (
+    <div className="space-y-8 p-4 border-b">
+      {/* Habit Tracker */}
+      <div className="space-y-4 p-4 rounded-lg border bg-card/50">
+        <h3 className="font-semibold flex items-center gap-2"><Flame className="w-5 h-5 text-primary" /> Habit Tracker</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="habitName">Habit</Label>
+            <Input id="habitName" value={habitName} onChange={(e) => setHabitName(e.target.value)} placeholder="e.g., Read for 15 minutes" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="habitGoal">Goal</Label>
+            <Input id="habitGoal" value={habitGoal} onChange={(e) => setHabitGoal(e.target.value)} placeholder="e.g., Daily" />
+          </div>
+        </div>
+        <div className="space-y-2">
+            <Label htmlFor="habitStreak">Current Streak (days)</Label>
+            <Input id="habitStreak" type="number" value={habitStreak} onChange={(e) => setHabitStreak(Number(e.target.value))} placeholder="0" />
+        </div>
+      </div>
+
+      {/* Grocery List */}
+      <div className="space-y-2 p-4 rounded-lg border bg-card/50">
+        <h3 className="font-semibold flex items-center gap-2"><ShoppingCart className="w-5 h-5 text-primary" /> Grocery List</h3>
+        <Textarea id="groceryList" value={groceryList} onChange={(e) => setGroceryList(e.target.value)} placeholder="- Milk&#10;- Bread&#10;- Eggs" className="min-h-[150px] list-disc" />
+      </div>
+
+      {/* Collections */}
+      <div className="space-y-4 p-4 rounded-lg border bg-card/50">
+        <h3 className="font-semibold flex items-center gap-2"><Book className="w-5 h-5 text-primary" /> Collections</h3>
+        <div className="space-y-2">
+            <Label htmlFor="collectionType">Collection Type</Label>
+            <Input id="collectionType" value={collectionType} onChange={(e) => setCollectionType(e.target.value)} placeholder="e.g., Books to Read, Movies to Watch" />
+        </div>
+        <div className="space-y-2">
+            <Label htmlFor="collectionItems">Items</Label>
+            <Textarea id="collectionItems" value={collectionItems} onChange={(e) => setCollectionItems(e.target.value)} placeholder="- Item 1&#10;- Item 2" className="min-h-[150px] list-disc" />
+        </div>
+      </div>
+    </div>
+  );
+
 
   return (
     <Card className="w-full max-w-4xl mx-auto shadow-lg rounded-2xl overflow-hidden glass">
@@ -270,6 +332,8 @@ export function Editor({ note }: EditorProps) {
         
         {notebookId === 'meetings' && renderMeetingFields()}
         {notebookId === 'projects' && renderProjectFields()}
+        {notebookId === 'personal' && renderPersonalFields()}
+
 
         <div className="flex items-center justify-between gap-1 p-2 border-b sticky top-0 bg-card/80 backdrop-blur-sm z-10">
           <div>

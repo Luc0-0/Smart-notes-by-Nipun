@@ -20,6 +20,14 @@ export type Note = {
   projectFeatures?: string;
   projectIdeas?: string;
   projectTimeline?: string;
+
+  // Personal-specific fields
+  habitName?: string;
+  habitGoal?: string;
+  habitStreak?: number;
+  groceryList?: string;
+  collectionType?: string;
+  collectionItems?: string;
 };
 
 export type Notebook = {
