@@ -161,58 +161,62 @@ export function Editor({ note }: EditorProps) {
             Save
           </Button>
         </div>
-        <div className="flex items-center gap-1 p-2 border-b sticky top-0 bg-card/80 backdrop-blur-sm z-10">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" disabled={isAiLoading || isSaving}>
-                {isAiLoading ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Sparkles className="h-4 w-4 mr-2 text-primary" />
-                )}
-                AI Actions
-                <ChevronDown className="h-4 w-4 ml-2" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={handleSummarize}>
-                Summarize
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleGenerateOutline}>
-                Generate outline
-              </DropdownMenuItem>
-              <DropdownMenuItem disabled>Rewrite</DropdownMenuItem>
-              <DropdownMenuItem disabled>Improve tone</DropdownMenuItem>
-              <DropdownMenuItem disabled>Extract action items</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+        <div className="flex items-center justify-between gap-1 p-2 border-b sticky top-0 bg-card/80 backdrop-blur-sm z-10">
+          <div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" disabled={isAiLoading || isSaving}>
+                  {isAiLoading ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-4 w-4 mr-2 text-primary" />
+                  )}
+                  AI Actions
+                  <ChevronDown className="h-4 w-4 ml-2" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={handleSummarize}>
+                  Summarize
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleGenerateOutline}>
+                  Generate outline
+                </DropdownMenuItem>
+                <DropdownMenuItem disabled>Rewrite</DropdownMenuItem>
+                <DropdownMenuItem disabled>Improve tone</DropdownMenuItem>
+                <DropdownMenuItem disabled>Extract action items</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
 
-          <Separator orientation="vertical" className="h-6 mx-2" />
+          <div className="flex items-center gap-1">
+            <Separator orientation="vertical" className="h-6 mx-2" />
 
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <Bold className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <Italic className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <Strikethrough className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <Code className="h-4 w-4" />
-          </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Bold className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Italic className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Strikethrough className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Code className="h-4 w-4" />
+            </Button>
 
-          <Separator orientation="vertical" className="h-6 mx-2" />
+            <Separator orientation="vertical" className="h-6 mx-2" />
 
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <List className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <ListOrdered className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <Quote className="h-4 w-4" />
-          </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <List className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <ListOrdered className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Quote className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
         <div className="p-4">
           <Textarea
