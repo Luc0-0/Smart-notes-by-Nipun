@@ -41,6 +41,7 @@ import { addNote, updateNote } from '@/lib/firebase/firestore';
 import type { Note } from '@/lib/types';
 import { summarizeText } from '@/ai/flows/summarize-flow';
 import { generateOutline } from '@/ai/flows/outline-flow';
+import { rewriteText } from '@/ai/flows/rewrite-flow';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Checklist, type ChecklistItemType } from '@/components/ui/checklist';
@@ -151,6 +152,36 @@ export function Editor({ note }: EditorProps) {
         variant: 'destructive',
         title: 'Outline generation failed',
         description: 'An error occurred. Please try again.',
+      });
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+  
+  const handleRewrite = async () => {
+    const textToRewrite = content || projectIdeas;
+    if (!textToRewrite) {
+      toast({
+        variant: 'destructive',
+        title: 'Cannot rewrite',
+        description: 'Please enter some content to rewrite.',
+      });
+      return;
+    }
+    setIsAiLoading(true);
+    try {
+      const result = await rewriteText({ text: textToRewrite });
+      setContent(result.rewrittenText);
+      toast({
+        title: 'Rewritten!',
+        description: 'The note content has been rewritten.',
+      });
+    } catch (error) {
+      console.error('Rewrite error:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Rewrite failed',
+        description: 'An error occurred while rewriting the text. Please try again.',
       });
     } finally {
       setIsAiLoading(false);
@@ -361,7 +392,7 @@ export function Editor({ note }: EditorProps) {
                 <DropdownMenuItem onClick={handleGenerateOutline}>
                   Generate outline
                 </DropdownMenuItem>
-                <DropdownMenuItem disabled>Rewrite</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleRewrite}>Rewrite</DropdownMenuItem>
                 <DropdownMenuItem disabled>Improve tone</DropdownMenuItem>
                 <DropdownMenuItem disabled>Extract action items</DropdownMenuItem>
               </DropdownMenuContent>
