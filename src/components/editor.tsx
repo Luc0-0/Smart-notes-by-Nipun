@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Bold,
@@ -15,6 +15,8 @@ import {
   ChevronDown,
   Loader2,
   Save,
+  CalendarIcon,
+  Link as LinkIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -27,12 +29,17 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/lib/firebase/auth-provider';
 import { addNote, updateNote } from '@/lib/firebase/firestore';
 import type { Note } from '@/lib/types';
 import { summarizeText } from '@/ai/flows/summarize-flow';
 import { generateOutline } from '@/ai/flows/outline-flow';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
 
 type EditorProps = {
   note?: Note | null;
@@ -44,13 +51,42 @@ export function Editor({ note }: EditorProps) {
   const { user } = useAuth();
   const { toast } = useToast();
 
+  const getInitialNotebookId = () => {
+    if (note?.notebookId) return note.notebookId;
+    const notebookIdFromUrl = searchParams.get('notebook');
+    if (['general', 'projects', 'meetings', 'personal'].includes(notebookIdFromUrl as string)) {
+      return notebookIdFromUrl as Note['notebookId'];
+    }
+    return 'general';
+  }
+
   const [title, setTitle] = useState(note?.title || '');
   const [content, setContent] = useState(note?.content || '');
+  
+  // Meeting specific state
+  const [meetingDate, setMeetingDate] = useState<Date | undefined>(
+    note?.meetingDate?.toDate()
+  );
+  const [meetingLink, setMeetingLink] = useState(note?.meetingLink || '');
+  const [discussionTopics, setDiscussionTopics] = useState(note?.discussionTopics || '');
+  const [actionItems, setActionItems] = useState(note?.actionItems || '');
+
+  // Project specific state
+  const [projectFeatures, setProjectFeatures] = useState(note?.projectFeatures || '');
+  const [projectIdeas, setProjectIdeas] = useState(note?.projectIdeas || '');
+  const [projectTimeline, setProjectTimeline] = useState(note?.projectTimeline || '');
+
+  const [notebookId, setNotebookId] = useState<Note['notebookId']>(getInitialNotebookId());
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  useEffect(() => {
+    setNotebookId(getInitialNotebookId());
+  }, [note, searchParams]);
+  
   const handleSummarize = async () => {
-    if (!content) {
+    const textToSummarize = content || discussionTopics || projectFeatures;
+    if (!textToSummarize) {
       toast({
         variant: 'destructive',
         title: 'Cannot summarize',
@@ -60,7 +96,7 @@ export function Editor({ note }: EditorProps) {
     }
     setIsAiLoading(true);
     try {
-      const result = await summarizeText({ text: content });
+      const result = await summarizeText({ text: textToSummarize });
       setContent(result.summary);
       toast({
         title: 'Summarized!',
@@ -114,23 +150,32 @@ export function Editor({ note }: EditorProps) {
         return;
     }
     setIsSaving(true);
+
+    const noteData: Partial<Note> = {
+        title,
+        content,
+        userId: user.uid,
+        notebookId,
+        // Meeting fields
+        meetingDate: meetingDate,
+        meetingLink,
+        discussionTopics,
+        actionItems,
+        // Project fields
+        projectFeatures,
+        projectIdeas,
+        projectTimeline,
+    };
     
     try {
       if (note?.id) {
         // Update existing note
-        await updateNote(note.id, { title, content });
+        await updateNote(note.id, noteData);
         toast({ title: 'Note Updated!', description: 'Your changes have been saved.' });
       } else {
         // Create new note
-        const notebookId = searchParams.get('notebook') || 'general';
-        const { id: newNoteId } = await addNote({ 
-            title, 
-            content, 
-            userId: user.uid, 
-            notebookId: notebookId as Note['notebookId']
-        });
+        const { id: newNoteId } = await addNote(noteData);
         toast({ title: 'Note Saved!', description: 'Your new note has been created.' });
-        // Redirect to the new note's page
         router.replace(`/app/notes/${newNoteId}`);
       }
     } catch (error) {
@@ -140,6 +185,67 @@ export function Editor({ note }: EditorProps) {
         setIsSaving(false);
     }
   }
+
+  const renderMeetingFields = () => (
+    <div className="space-y-6 p-4 border-b">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+             <div className="space-y-2">
+                <Label htmlFor="meetingDate" className="flex items-center gap-2"><CalendarIcon className="w-4 h-4" /> Meeting Date</Label>
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <Button
+                            id="meetingDate"
+                            variant={"outline"}
+                            className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !meetingDate && "text-muted-foreground"
+                            )}
+                        >
+                        {meetingDate ? format(meetingDate, "PPP") : <span>Pick a date</span>}
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                        <Calendar
+                        mode="single"
+                        selected={meetingDate}
+                        onSelect={setMeetingDate}
+                        initialFocus
+                        />
+                    </PopoverContent>
+                </Popover>
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="meetingLink" className="flex items-center gap-2"><LinkIcon className="w-4 h-4" /> Meeting Link</Label>
+                <Input id="meetingLink" value={meetingLink} onChange={(e) => setMeetingLink(e.target.value)} placeholder="https://..." />
+            </div>
+        </div>
+        <div className="space-y-2">
+            <Label htmlFor="discussionTopics">Discussion Topics</Label>
+            <Textarea id="discussionTopics" value={discussionTopics} onChange={(e) => setDiscussionTopics(e.target.value)} placeholder="Topics to cover..." className="min-h-[120px]" />
+        </div>
+        <div className="space-y-2">
+            <Label htmlFor="actionItems">Action Items</Label>
+            <Textarea id="actionItems" value={actionItems} onChange={(e) => setActionItems(e.target.value)} placeholder="- Follow up with..." className="min-h-[120px]" />
+        </div>
+    </div>
+  );
+
+  const renderProjectFields = () => (
+      <div className="space-y-6 p-4 border-b">
+        <div className="space-y-2">
+            <Label htmlFor="projectFeatures">Features & Requirements</Label>
+            <Textarea id="projectFeatures" value={projectFeatures} onChange={(e) => setProjectFeatures(e.target.value)} placeholder="List key features and technical requirements..." className="min-h-[150px]" />
+        </div>
+        <div className="space-y-2">
+            <Label htmlFor="projectIdeas">Brainstorming & Ideas</Label>
+            <Textarea id="projectIdeas" value={projectIdeas} onChange={(e) => setProjectIdeas(e.target.value)} placeholder="Jot down random ideas, inspirations, and potential approaches..." className="min-h-[120px]" />
+        </div>
+        <div className="space-y-2">
+            <Label htmlFor="projectTimeline">Timeline & Milestones</Label>
+            <Textarea id="projectTimeline" value={projectTimeline} onChange={(e) => setProjectTimeline(e.target.value)} placeholder="Phase 1: ... (due EOW)&#10;Phase 2: ... (next week)" className="min-h-[120px]" />
+        </div>
+    </div>
+  );
 
   return (
     <Card className="w-full max-w-4xl mx-auto shadow-lg rounded-2xl overflow-hidden glass">
@@ -161,6 +267,10 @@ export function Editor({ note }: EditorProps) {
             Save
           </Button>
         </div>
+        
+        {notebookId === 'meetings' && renderMeetingFields()}
+        {notebookId === 'projects' && renderProjectFields()}
+
         <div className="flex items-center justify-between gap-1 p-2 border-b sticky top-0 bg-card/80 backdrop-blur-sm z-10">
           <div>
             <DropdownMenu>
@@ -219,11 +329,14 @@ export function Editor({ note }: EditorProps) {
           </div>
         </div>
         <div className="p-4">
+          <Label className="text-sm font-medium text-muted-foreground mb-2 block">
+            {notebookId === 'general' ? 'Note Content' : 'Additional Notes'}
+          </Label>
           <Textarea
             placeholder="Start writing your brilliant ideas..."
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            className="min-h-[60vh] w-full resize-none border-none focus-visible:ring-0 p-0 text-base bg-transparent"
+            className="min-h-[40vh] w-full resize-none border-none focus-visible:ring-0 p-0 text-base bg-transparent"
             disabled={isAiLoading || isSaving}
           />
         </div>

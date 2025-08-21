@@ -9,6 +9,7 @@ import {
   where,
   getDocs,
   serverTimestamp,
+  Timestamp,
 } from 'firebase/firestore';
 import { db } from './config';
 import type { Note } from '@/lib/types';
@@ -16,7 +17,7 @@ import type { Note } from '@/lib/types';
 const notesCollection = collection(db, 'notes');
 
 // Create a new note
-export const addNote = async (noteData: Omit<Note, 'id' | 'createdAt' | 'updatedAt'>) => {
+export const addNote = async (noteData: Partial<Note>) => {
   try {
     const docRef = await addDoc(notesCollection, {
       ...noteData,
@@ -46,12 +47,21 @@ export const updateNote = async (noteId: string, noteData: Partial<Note>) => {
 };
 
 // Get a single note by ID
-export const getNote = async (noteId: string) => {
+export const getNote = async (noteId: string): Promise<Note | null> => {
   try {
     const noteRef = doc(db, 'notes', noteId);
     const docSnap = await getDoc(noteRef);
     if (docSnap.exists()) {
-      return { id: docSnap.id, ...docSnap.data() } as Note;
+      const data = docSnap.data();
+      // Convert Firestore Timestamps to JS Date objects for client-side usage
+      const note: Note = {
+        id: docSnap.id,
+        ...data,
+        createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
+        updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date(),
+        meetingDate: data.meetingDate instanceof Timestamp ? data.meetingDate.toDate() : undefined,
+      } as Note;
+      return note;
     } else {
       console.log('No such document!');
       return null;
@@ -62,6 +72,7 @@ export const getNote = async (noteId: string) => {
   }
 };
 
+
 // Get all notes for a user
 export const getNotes = async (userId: string) => {
   try {
@@ -69,7 +80,13 @@ export const getNotes = async (userId: string) => {
     const querySnapshot = await getDocs(q);
     const notes: Note[] = [];
     querySnapshot.forEach((doc) => {
-      notes.push({ id: doc.id, ...doc.data() } as Note);
+        const data = doc.data();
+        notes.push({ 
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt,
+            updatedAt: data.updatedAt,
+         } as Note);
     });
     return notes;
   } catch (error) {

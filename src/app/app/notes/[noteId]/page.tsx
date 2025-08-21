@@ -48,6 +48,7 @@ export default function NotePage({ params }: { params: { noteId: string } }) {
   if (error) {
      return <div className="text-center text-destructive">{error}</div>;
   }
-
+  
+  // The editor can handle the note being null, but we pass notebookId for new notes
   return <Editor note={note} />;
 }

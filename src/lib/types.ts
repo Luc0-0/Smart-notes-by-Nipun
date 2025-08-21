@@ -7,8 +7,19 @@ export type Note = {
   content: string;
   userId: string;
   notebookId: 'general' | 'projects' | 'meetings' | 'personal';
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  createdAt: Timestamp | Date;
+  updatedAt: Timestamp | Date;
+
+  // Meeting-specific fields
+  meetingDate?: Timestamp | Date;
+  meetingLink?: string;
+  discussionTopics?: string;
+  actionItems?: string;
+  
+  // Project-specific fields
+  projectFeatures?: string;
+  projectIdeas?: string;
+  projectTimeline?: string;
 };
 
 export type Notebook = {
