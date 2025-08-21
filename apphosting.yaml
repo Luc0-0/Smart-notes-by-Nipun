@@ -5,3 +5,15 @@ runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
   maxInstances: 1
+  # You can add environment variables here.
+  # For sensitive values, use secrets.
+  # env:
+  #   - variable: MY_ENV_VAR
+  #     value: "my-production-value"
+  #   - variable: MY_SECRET_ENV_VAR
+  #     secret: MY_SECRET
+
+# vpcConnector:
+#   name: "projects/my-project/locations/us-central1/connectors/my-connector"
+
+# serviceAccount: my-service-account@my-project.iam.gserviceaccount.com
