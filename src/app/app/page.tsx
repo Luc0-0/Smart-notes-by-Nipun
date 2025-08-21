@@ -1,9 +1,9 @@
-import { Editor } from '@/components/editor';
+import { NoteList } from '@/components/note-list';
 
 export default function AppPage() {
   return (
     <div>
-      <Editor />
+      <NoteList />
     </div>
   );
 }
