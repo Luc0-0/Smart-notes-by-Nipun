@@ -6,35 +6,44 @@ import { useAuth } from '@/lib/firebase/auth-provider';
 import { getNotes } from '@/lib/firebase/firestore';
 import type { Note, Notebook } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Book, BrainCircuit, Briefcase, PlusCircle, ShoppingCart } from 'lucide-react';
+import { PlusCircle, Book, Briefcase, BrainCircuit, ShoppingCart, ArrowRight } from 'lucide-react';
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts"
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel"
+import { formatDistanceToNow } from 'date-fns';
+
 
 const notebooks: Notebook[] = [
   {
     id: 'general',
-    title: 'General Notes',
+    title: 'General',
     description: 'Quick thoughts and daily reminders.',
-    icon: <Book className="w-8 h-8 text-primary" />,
+    icon: <Book className="w-6 h-6 text-primary" />,
   },
   {
     id: 'projects',
     title: 'Projects',
     description: 'Ideas and plans for work.',
-    icon: <Briefcase className="w-8 h-8 text-primary" />,
+    icon: <Briefcase className="w-6 h-6 text-primary" />,
   },
   {
     id: 'meetings',
     title: 'Meetings',
     description: 'Summaries and action items.',
-    icon: <BrainCircuit className="w-8 h-8 text-primary" />,
+    icon: <BrainCircuit className="w-6 h-6 text-primary" />,
   },
   {
     id: 'personal',
     title: 'Personal',
-    description: 'Goals, journals, and personal tasks.',
-    icon: <ShoppingCart className="w-8 h-8 text-primary" />,
+    description: 'Goals, journals, and tasks.',
+    icon: <ShoppingCart className="w-6 h-6 text-primary" />,
   },
 ];
 
@@ -55,36 +64,59 @@ export function Dashboard() {
     if (user) {
       setLoading(true);
       getNotes(user.uid).then((userNotes) => {
-        setNotes(userNotes);
+        const sortedNotes = userNotes.sort((a, b) => {
+          const dateA = a.updatedAt instanceof Date ? a.updatedAt.getTime() : a.updatedAt.toMillis();
+          const dateB = b.updatedAt instanceof Date ? b.updatedAt.getTime() : b.updatedAt.toMillis();
+          return dateB - dateA;
+        });
+        setNotes(sortedNotes);
         setLoading(false);
       });
     }
   }, [user]);
 
-  const getNotesForNotebook = (notebookId: string) => {
-    return notes.filter((note) => note.notebookId === notebookId);
-  };
+  const notesThisWeek = notes.filter(note => {
+    const noteDate = (note.createdAt as Date);
+    const aWeekAgo = new Date();
+    aWeekAgo.setDate(aWeekAgo.getDate() - 7);
+    return noteDate > aWeekAgo;
+  }).length;
   
+  const notebookCounts = notes.reduce((acc, note) => {
+    acc[note.notebookId] = (acc[note.notebookId] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  
+  const mostActiveNotebook = Object.entries(notebookCounts).sort((a, b) => b[1] - a[1])[0];
+  const mostActiveNotebookName = mostActiveNotebook ? notebooks.find(n => n.id === mostActiveNotebook[0])?.title : 'N/A';
+
+  const chartData = notebooks.map(nb => ({
+    name: nb.title,
+    total: notebookCounts[nb.id] || 0,
+  }));
+  
+  const recentNotes = notes.slice(0, 5);
+
+
   if (loading) {
     return (
       <div className="space-y-8">
-        <div>
-          <Skeleton className="h-9 w-1/2" />
-          <Skeleton className="h-5 w-1/3 mt-2" />
-        </div>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {[...Array(4)].map((_, i) => (
-             <Card key={i}>
-              <CardHeader>
-                <Skeleton className="h-8 w-8 rounded-full" />
-                <Skeleton className="h-6 w-3/4 mt-2" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-4 w-full" />
-                 <Skeleton className="h-4 w-2/3 mt-2" />
-              </CardContent>
+        <Skeleton className="h-9 w-1/2" />
+        <div className="grid gap-4 md:grid-cols-3">
+          {[...Array(3)].map((_, i) => (
+            <Card key={i}>
+              <CardHeader><Skeleton className="h-6 w-1/2" /></CardHeader>
+              <CardContent><Skeleton className="h-8 w-1/3" /></CardContent>
             </Card>
           ))}
+        </div>
+        <div>
+          <Skeleton className="h-8 w-1/4 mb-4" />
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {[...Array(3)].map((_, i) => (
+               <Card key={i} className="h-40"><CardHeader><Skeleton className="h-6 w-full" /><Skeleton className="h-4 w-1/2 mt-2" /></CardHeader><CardContent><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-2/3 mt-2" /></CardContent></Card>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -92,58 +124,144 @@ export function Dashboard() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold font-headline">
-          {greeting}, {user?.displayName?.split(' ')[0] || 'User'}!
-        </h1>
-        <p className="text-muted-foreground">Here’s a look at your notebooks.</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+        <div>
+          <h1 className="text-3xl font-bold font-headline">
+            {greeting}, {user?.displayName?.split(' ')[0] || 'User'}!
+          </h1>
+          <p className="text-muted-foreground">Let's make today productive.</p>
+        </div>
+        <Button asChild>
+          <Link href="/app/notes/new">
+            <PlusCircle className="mr-2" />
+            New Note
+          </Link>
+        </Button>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {notebooks.map((notebook) => {
-          const notebookNotes = getNotesForNotebook(notebook.id);
-          return (
-            <Popover key={notebook.id}>
-              <PopoverTrigger asChild>
-                <Card className="transform transition-transform duration-300 hover:scale-105 hover:shadow-2xl hover:border-primary/50 cursor-pointer h-full flex flex-col">
-                  <CardHeader>
-                    <div className="flex items-center gap-4">
-                      {notebook.icon}
-                      <CardTitle>{notebook.title}</CardTitle>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="flex-1">
-                    <p className="text-foreground/70">{notebook.description}</p>
-                  </CardContent>
-                </Card>
-              </PopoverTrigger>
-              <PopoverContent className="w-64 p-2">
-                <div className="space-y-2">
-                  <h4 className="font-medium leading-none px-2 py-1.5">{notebook.title} Notes</h4>
-                  <div className="flex flex-col gap-1 max-h-48 overflow-y-auto">
-                    {notebookNotes.length > 0 ? (
-                      notebookNotes.map((note) => (
-                        <Link href={`/app/notes/${note.id}`} key={note.id}>
-                          <div className="rounded-md p-2 hover:bg-accent text-sm cursor-pointer truncate">
-                            {note.title || 'Untitled Note'}
-                          </div>
-                        </Link>
-                      ))
-                    ) : (
-                      <p className="text-xs text-muted-foreground px-2 py-1.5">No notes in this notebook yet.</p>
-                    )}
-                  </div>
-                  <Button size="sm" className="w-full mt-2" asChild>
-                    <Link href={`/app/notes/new?notebook=${notebook.id}`}>
-                      <PlusCircle className="mr-2 h-4 w-4" />
-                      New Note
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Notes</CardTitle>
+             <Book className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{notes.length}</div>
+            <p className="text-xs text-muted-foreground">notes created across all notebooks</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Notes this Week</CardTitle>
+            <Briefcase className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">+{notesThisWeek}</div>
+            <p className="text-xs text-muted-foreground">new notes in the last 7 days</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Most Active Notebook</CardTitle>
+             <BrainCircuit className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{mostActiveNotebookName}</div>
+            <p className="text-xs text-muted-foreground">Your most frequently used notebook</p>
+          </CardContent>
+        </Card>
+      </div>
+      
+      {recentNotes.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-2xl font-semibold font-headline">Recent Notes</h2>
+           <Carousel
+            opts={{
+              align: "start",
+            }}
+            className="w-full"
+          >
+            <CarouselContent>
+              {recentNotes.map((note) => (
+                <CarouselItem key={note.id} className="md:basis-1/2 lg:basis-1/3">
+                  <div className="p-1">
+                     <Link href={`/app/notes/${note.id}`} className="block h-full">
+                      <Card className="transform transition-transform duration-300 hover:scale-105 hover:shadow-2xl hover:border-primary/50 cursor-pointer h-full flex flex-col">
+                        <CardHeader>
+                          <CardTitle className="truncate">{note.title || 'Untitled Note'}</CardTitle>
+                           <CardDescription>
+                              Updated {formatDistanceToNow(new Date(note.updatedAt as Date), { addSuffix: true })}
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex-1">
+                           <p className="text-foreground/70 line-clamp-2">
+                              {note.content || note.projectIdeas || "No additional content."}
+                          </p>
+                        </CardContent>
+                      </Card>
                     </Link>
-                  </Button>
-                </div>
-              </PopoverContent>
-            </Popover>
-          );
-        })}
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious className="hidden sm:flex" />
+            <CarouselNext className="hidden sm:flex" />
+          </Carousel>
+        </div>
+      )}
+
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="space-y-4">
+            <h2 className="text-2xl font-semibold font-headline">Notebooks</h2>
+            <div className="grid gap-4">
+                {notebooks.map((notebook) => (
+                     <Card key={notebook.id} className="transform transition-transform duration-300 hover:scale-102 hover:shadow-lg">
+                        <CardHeader className="flex flex-row items-center justify-between p-4">
+                            <div className="flex items-center gap-4">
+                                {notebook.icon}
+                                <div>
+                                    <CardTitle className="text-lg">{notebook.title}</CardTitle>
+                                    <p className="text-sm text-muted-foreground">{notebookCounts[notebook.id] || 0} notes</p>
+                                </div>
+                            </div>
+                            <Button variant="ghost" size="icon" asChild>
+                                <Link href={`/app/notes?notebook=${notebook.id}`}>
+                                    <ArrowRight className="h-4 w-4" />
+                                </Link>
+                            </Button>
+                        </CardHeader>
+                    </Card>
+                ))}
+            </div>
+        </div>
+         <div className="space-y-4">
+            <h2 className="text-2xl font-semibold font-headline">Notes Overview</h2>
+             <Card>
+                <CardHeader>
+                    <CardTitle>Notes by Notebook</CardTitle>
+                    <CardDescription>A summary of your note distribution.</CardDescription>
+                </CardHeader>
+                <CardContent className="pl-2">
+                    <ResponsiveContainer width="100%" height={250}>
+                        <BarChart data={chartData} layout="vertical" margin={{ left: 10 }}>
+                             <XAxis type="number" hide />
+                             <YAxis 
+                                dataKey="name" 
+                                type="category" 
+                                tickLine={false} 
+                                axisLine={false} 
+                                stroke="hsl(var(--muted-foreground))"
+                                fontSize={12}
+                                interval={0}
+                                width={80}
+                            />
+                            <Bar dataKey="total" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} barSize={20} />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </CardContent>
+            </Card>
+        </div>
       </div>
     </div>
   );
