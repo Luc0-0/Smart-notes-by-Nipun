@@ -66,8 +66,10 @@ export function UserNav() {
           <DropdownMenuItem asChild>
             <Link href="/app/profile">Profile</Link>
           </DropdownMenuItem>
-          <DropdownMenuItem>Billing</DropdownMenuItem>
-          <DropdownMenuItem>Settings</DropdownMenuItem>
+          <DropdownMenuItem disabled>Billing</DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href="/app/settings">Settings</Link>
+          </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleSignOut}>

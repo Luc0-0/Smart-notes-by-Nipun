@@ -9,6 +9,8 @@ export type Note = {
   content: string;
   userId: string;
   notebookId: 'general' | 'projects' | 'meetings' | 'personal';
+  tags: string[];
+  isArchived: boolean;
   createdAt: Timestamp | Date;
   updatedAt: Timestamp | Date;
 

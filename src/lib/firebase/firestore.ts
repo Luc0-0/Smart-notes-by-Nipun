@@ -8,7 +8,7 @@ import {
   where,
   getDocs,
   serverTimestamp,
-  Timestamp,
+  deleteDoc,
 } from 'firebase/firestore';
 import { db } from './config';
 import type { Note } from '@/lib/types';
@@ -57,6 +57,18 @@ export const updateNote = async (noteId: string, noteData: Partial<Note>) => {
     return { error };
   }
 };
+
+// Delete a note
+export const deleteNote = async (noteId: string) => {
+  try {
+    const noteRef = doc(db, 'notes', noteId);
+    await deleteDoc(noteRef);
+    return { error: null };
+  } catch (error) {
+    console.error('Error deleting document: ', error);
+    return { error };
+  }
+}
 
 // Get a single note by ID
 export const getNote = async (noteId: string): Promise<Note | null> => {

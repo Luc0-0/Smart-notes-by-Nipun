@@ -3,14 +3,14 @@
 import { NoteList } from '@/components/note-list';
 import { Suspense } from 'react';
 
-function NotesPageContent() {
-  return <NoteList />;
+function NotesPageContent({ searchQuery }: { searchQuery: string }) {
+  return <NoteList searchQuery={searchQuery} />;
 }
 
-export default function AllNotesPage() {
+export default function AllNotesPage({ searchQuery }: { searchQuery: string }) {
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <NotesPageContent />
+      <NotesPageContent searchQuery={searchQuery} />
     </Suspense>
   );
 }

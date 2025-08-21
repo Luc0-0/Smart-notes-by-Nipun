@@ -20,6 +20,11 @@ import {
   Book,
   ShoppingCart,
   Flame,
+  Trash2,
+  Archive,
+  ArchiveRestore,
+  Tags,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -29,19 +34,38 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/lib/firebase/auth-provider';
-import { addNote, updateNote } from '@/lib/firebase/firestore';
+import { addNote, updateNote, deleteNote } from '@/lib/firebase/firestore';
 import type { Note } from '@/lib/types';
 import { summarizeText } from '@/ai/flows/summarize-flow';
 import { generateOutline } from '@/ai/flows/outline-flow';
 import { rewriteText } from '@/ai/flows/rewrite-flow';
+import { improveTone } from '@/ai/flows/improve-tone-flow';
+import { extractActionItems } from '@/ai/flows/extract-action-items-flow';
+import { generateTags } from '@/ai/flows/generate-tags-flow';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Checklist, type ChecklistItemType } from '@/components/ui/checklist';
@@ -67,6 +91,8 @@ export function Editor({ note }: EditorProps) {
 
   const [title, setTitle] = useState(note?.title || '');
   const [content, setContent] = useState(note?.content || '');
+  const [tags, setTags] = useState<string[]>(note?.tags || []);
+  const [tagInput, setTagInput] = useState('');
   
   // Meeting specific state
   const [meetingDate, setMeetingDate] = useState<Date | undefined>(
@@ -89,7 +115,7 @@ export function Editor({ note }: EditorProps) {
   const [collectionType, setCollectionType] = useState(note?.collectionType || '');
   const [collectionItems, setCollectionItems] = useState<ChecklistItemType[]>(note?.collectionItems || []);
 
-
+  const [isArchived, setIsArchived] = useState(note?.isArchived || false);
   const [notebookId, setNotebookId] = useState<Note['notebookId']>(getInitialNotebookId());
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -98,108 +124,102 @@ export function Editor({ note }: EditorProps) {
     setNotebookId(getInitialNotebookId());
   }, [note, searchParams]);
   
-  const handleSummarize = async () => {
-    const textToSummarize = content || projectIdeas;
-    if (!textToSummarize) {
+  const handleAiAction = async (
+    action: (input: any) => Promise<any>,
+    input: any,
+    messages: { loading: string, success: string, error: string }
+  ) => {
+    const textToProcess = content || projectIdeas;
+     if (!textToProcess) {
       toast({
         variant: 'destructive',
-        title: 'Cannot summarize',
-        description: 'Please enter some content to summarize.',
+        title: 'Cannot perform action',
+        description: 'Please enter some content first.',
       });
       return;
     }
+
     setIsAiLoading(true);
+    toast({ title: messages.loading });
     try {
-      const result = await summarizeText({ text: textToSummarize });
-      setContent(result.summary);
-      toast({
-        title: 'Summarized!',
-        description: 'The note content has been summarized.',
-      });
+      const result = await action({ ...input, text: textToProcess });
+      
+      if (result.rewrittenText) {
+        setContent(result.rewrittenText);
+      } else if (result.summary) {
+        setContent(result.summary);
+      } else if (result.outline) {
+        setContent((prev) => prev + '\n\n' + result.outline);
+      } else if (result.actionItems) {
+        const newActionItems = result.actionItems.map((text: string) => ({ id: new Date().toISOString() + text, text, checked: false }));
+        setActionItems(prev => [...prev, ...newActionItems]);
+      }
+
+      toast({ title: messages.success });
     } catch (error) {
-      console.error('Summarization error:', error);
+      console.error(`${messages.error} error:`, error);
       toast({
         variant: 'destructive',
-        title: 'Summarization failed',
-        description:
-          'An error occurred while summarizing the text. Please try again.',
-      });
-    } finally {
-      setIsAiLoading(false);
-    }
-  };
-  
-  const handleGenerateOutline = async () => {
-    if (!title) {
-      toast({
-        variant: 'destructive',
-        title: 'Cannot generate outline',
-        description: 'Please enter a title for your note first.',
-      });
-      return;
-    }
-    setIsAiLoading(true);
-    try {
-      const result = await generateOutline({ title });
-      setContent((prevContent) => prevContent + '\n\n' + result.outline);
-      toast({
-        title: 'Outline Generated!',
-        description: 'An outline has been added to your note.',
-      });
-    } catch (error) {
-      console.error('Outline generation error:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Outline generation failed',
+        title: `${messages.error} failed`,
         description: 'An error occurred. Please try again.',
       });
     } finally {
       setIsAiLoading(false);
     }
-  };
-  
-  const handleRewrite = async () => {
-    const textToRewrite = content || projectIdeas;
-    if (!textToRewrite) {
-      toast({
-        variant: 'destructive',
-        title: 'Cannot rewrite',
-        description: 'Please enter some content to rewrite.',
-      });
+  }
+
+  const handleRewrite = () => handleAiAction(rewriteText, {}, { loading: 'Rewriting...', success: 'Rewritten!', error: 'Rewrite' });
+  const handleSummarize = () => handleAiAction(summarizeText, {}, { loading: 'Summarizing...', success: 'Summarized!', error: 'Summarization' });
+  const handleGenerateOutline = async () => {
+    if (!title) {
+      toast({ variant: 'destructive', title: 'Please enter a title first.' });
       return;
     }
     setIsAiLoading(true);
+    toast({ title: 'Generating outline...' });
     try {
-      const result = await rewriteText({ text: textToRewrite });
-      setContent(result.rewrittenText);
-      toast({
-        title: 'Rewritten!',
-        description: 'The note content has been rewritten.',
-      });
+      const { outline } = await generateOutline({ title });
+      setContent((prev) => prev + '\n\n' + outline);
+      toast({ title: 'Outline generated!' });
     } catch (error) {
-      console.error('Rewrite error:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Rewrite failed',
-        description: 'An error occurred while rewriting the text. Please try again.',
-      });
+      console.error('Outline error:', error);
+      toast({ variant: 'destructive', title: 'Outline generation failed.' });
     } finally {
       setIsAiLoading(false);
     }
   };
-  
-  const handleSave = async () => {
+  const handleImproveTone = (tone: string) => handleAiAction(improveTone, { tone }, { loading: `Changing tone to ${tone}...`, success: 'Tone improved!', error: 'Tone improvement' });
+  const handleExtractActionItems = () => handleAiAction(extractActionItems, {}, { loading: 'Extracting action items...', success: 'Action items extracted!', error: 'Extraction' });
+
+
+  const handleSave = async (autoSave = false) => {
     if (!user) {
         toast({ variant: 'destructive', title: 'You must be logged in to save.' });
         return;
     }
     setIsSaving(true);
 
+    const noteContentForTags = [title, content, projectIdeas].filter(Boolean).join('\n');
+    let finalTags = tags;
+
+    if (!autoSave && noteContentForTags) {
+      try {
+        const result = await generateTags({ text: noteContentForTags });
+        const newTags = result.tags.filter(tag => !finalTags.includes(tag));
+        finalTags = [...finalTags, ...newTags];
+      } catch (error) {
+        console.error("Auto-tagging error:", error);
+      }
+    }
+
+
     const baseNoteData = {
         title,
         content,
         userId: user.uid,
         notebookId,
+        tags: finalTags,
+        isArchived,
     };
 
     const noteData: Partial<Note> = { ...baseNoteData };
@@ -224,22 +244,59 @@ export function Editor({ note }: EditorProps) {
     
     try {
       if (note?.id) {
-        // Update existing note - pass the cleaned noteData object
         await updateNote(note.id, noteData);
-        toast({ title: 'Note Updated!', description: 'Your changes have been saved.' });
+        if (!autoSave) toast({ title: 'Note Updated!', description: 'Your changes have been saved.' });
       } else {
-        // Create new note - pass the cleaned noteData object
         const { id: newNoteId } = await addNote(noteData);
-        toast({ title: 'Note Saved!', description: 'Your new note has been created.' });
+        if (!autoSave) toast({ title: 'Note Saved!', description: 'Your new note has been created.' });
         router.replace(`/app/notes/${newNoteId}`);
       }
     } catch (error) {
         console.error("Save error:", error);
-        toast({ variant: 'destructive', title: 'Save failed', description: 'Could not save your note. Please try again.' });
+        if (!autoSave) toast({ variant: 'destructive', title: 'Save failed', description: 'Could not save your note. Please try again.' });
     } finally {
         setIsSaving(false);
     }
   }
+
+  const handleDelete = async () => {
+    if (!note?.id) return;
+    setIsSaving(true);
+    try {
+      await deleteNote(note.id);
+      toast({ title: 'Note Deleted', description: 'Your note has been moved to the trash.' });
+      router.push('/app/notes');
+    } catch (error) {
+      console.error("Delete error:", error);
+      toast({ variant: 'destructive', title: 'Delete failed', description: 'Could not delete the note.' });
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  const handleArchiveToggle = async () => {
+    if (!note?.id) return;
+    const newArchivedState = !isArchived;
+    setIsArchived(newArchivedState);
+    await updateNote(note.id, { isArchived: newArchivedState });
+    toast({ title: newArchivedState ? 'Note Archived' : 'Note Restored' });
+  }
+
+  const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      const newTag = tagInput.trim().toLowerCase();
+      if (newTag && !tags.includes(newTag)) {
+        setTags([...tags, newTag]);
+      }
+      setTagInput('');
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setTags(tags.filter(tag => tag !== tagToRemove));
+  };
+
 
   const renderMeetingFields = () => (
     <div className="space-y-6 p-4 border-b">
@@ -348,7 +405,7 @@ export function Editor({ note }: EditorProps) {
   return (
     <Card className="w-full max-w-4xl mx-auto shadow-lg rounded-2xl overflow-hidden glass">
       <CardContent className="p-0">
-        <div className="p-4 border-b flex justify-between items-center gap-4">
+        <div className="p-4 border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <Input
             placeholder="Untitled Note"
             value={title}
@@ -356,14 +413,42 @@ export function Editor({ note }: EditorProps) {
             className="text-2xl font-bold border-none shadow-none focus-visible:ring-0 h-auto p-0 font-headline bg-transparent"
             disabled={isAiLoading || isSaving}
           />
-          <Button onClick={handleSave} disabled={isAiLoading || isSaving || !title}>
-            {isSaving ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="mr-2 h-4 w-4" />
+          <div className="flex items-center gap-2 self-end sm:self-center">
+            {note?.id && (
+              <>
+                 <Button variant="outline" size="icon" onClick={handleArchiveToggle} disabled={isAiLoading || isSaving}>
+                  {isArchived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
+                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="icon" disabled={isAiLoading || isSaving}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete your note.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </>
             )}
-            Save
-          </Button>
+            <Button onClick={() => handleSave(false)} disabled={isAiLoading || isSaving || !title}>
+              {isSaving ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+              Save
+            </Button>
+          </div>
         </div>
         
         {notebookId === 'meetings' && renderMeetingFields()}
@@ -371,8 +456,8 @@ export function Editor({ note }: EditorProps) {
         {notebookId === 'personal' && renderPersonalFields()}
 
 
-        <div className="flex items-center justify-between gap-1 p-2 border-b sticky top-0 bg-card/80 backdrop-blur-sm z-10">
-          <div className="flex-1">
+        <div className="flex items-center justify-between gap-1 p-2 border-b sticky top-0 bg-card/80 backdrop-blur-sm z-10 flex-wrap">
+          <div className="flex-1 flex items-center">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" disabled={isAiLoading || isSaving}>
@@ -393,8 +478,18 @@ export function Editor({ note }: EditorProps) {
                   Generate outline
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleRewrite}>Rewrite</DropdownMenuItem>
-                <DropdownMenuItem disabled>Improve tone</DropdownMenuItem>
-                <DropdownMenuItem disabled>Extract action items</DropdownMenuItem>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>Improve tone</DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem onClick={() => handleImproveTone('professional')}>Professional</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleImproveTone('casual')}>Casual</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleImproveTone('confident')}>Confident</DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleExtractActionItems} disabled={notebookId !== 'meetings'}>
+                  Extract action items
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -439,6 +534,26 @@ export function Editor({ note }: EditorProps) {
             className="min-h-[40vh] w-full resize-none border-none focus-visible:ring-0 p-0 text-base bg-transparent"
             disabled={isAiLoading || isSaving}
           />
+        </div>
+        <div className="p-4 border-t">
+          <Label className="flex items-center gap-2 mb-2"><Tags className="w-4 h-4"/> Tags</Label>
+          <div className="flex flex-wrap gap-2">
+            {tags.map((tag) => (
+              <Badge key={tag} variant="secondary" className="pl-3 pr-1">
+                {tag}
+                <button onClick={() => removeTag(tag)} className="ml-1 rounded-full p-0.5 hover:bg-destructive/20 text-destructive">
+                  <X className="h-3 w-3"/>
+                </button>
+              </Badge>
+            ))}
+             <Input 
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={handleTagInputKeyDown}
+              placeholder="Add a tag..."
+              className="h-7 w-auto flex-1 min-w-[100px] border-none shadow-none focus-visible:ring-0 bg-transparent"
+            />
+          </div>
         </div>
       </CardContent>
     </Card>

@@ -11,15 +11,15 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Sun, Moon, Sparkles } from 'lucide-react';
+import { useTheme } from '@/components/theme-provider';
 
 export function OnboardingWizard() {
+  const { setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState(1);
-  const [selectedTheme, setSelectedTheme] = useState('light');
+  const [selectedTheme, setSelectedTheme] = useState('aurora');
 
   useEffect(() => {
-    // In a real app, you would check if the user is new.
-    // For demo purposes, we'll use a timeout to show the wizard.
     const timer = setTimeout(() => {
         const hasOnboarded = localStorage.getItem('onboarded');
         if (!hasOnboarded) {
@@ -30,7 +30,7 @@ export function OnboardingWizard() {
   }, []);
 
   const handleFinish = () => {
-    // In a real app, save preferences here.
+    setTheme(selectedTheme);
     localStorage.setItem('onboarded', 'true');
     setIsOpen(false);
   };

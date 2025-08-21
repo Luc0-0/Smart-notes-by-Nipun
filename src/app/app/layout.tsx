@@ -2,7 +2,7 @@
 'use client';
 import type { ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { SidebarNav } from '@/components/sidebar-nav';
 import { Header } from '@/components/header';
@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (!loading && !user) {
@@ -21,12 +22,21 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     }
   }, [user, loading, router]);
   
+  const childrenWithProps = user ? 
+    (React.Children.map(children, child => {
+      if (React.isValidElement(child)) {
+        // @ts-ignore
+        return React.cloneElement(child, { searchQuery });
+      }
+      return child;
+    })) : children;
+
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background">
         <SidebarNav />
         <div className="flex flex-1 flex-col">
-          <Header />
+          <Header searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
           <main className="flex-1 p-4 sm:p-6">
             {loading || !user ? (
                <div className="space-y-8">
@@ -50,7 +60,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 </div>
               </div>
             ) : (
-              children
+              childrenWithProps
             )}
           </main>
         </div>

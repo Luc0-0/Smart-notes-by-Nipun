@@ -2,3 +2,6 @@
 import './flows/summarize-flow';
 import './flows/outline-flow';
 import './flows/rewrite-flow';
+import './flows/improve-tone-flow';
+import './flows/extract-action-items-flow';
+import './flows/generate-tags-flow';
