@@ -1,17 +1,22 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-export function middleware(request: NextRequest) {
-  const token = request.cookies.get('firebaseIdToken');
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  
+  // The token check is handled by the client-side AuthProvider and AppLayout
+  // This middleware is now only responsible for basic routing logic
+  // if the user is already on a page that requires auth.
+  // The actual redirect for unauthenticated users happens on the client.
 
-  // If the user is trying to access a protected app route and is not authenticated, redirect to login
-  if (pathname.startsWith('/app') && !token) {
-    return NextResponse.redirect(new URL('/login', request.url));
+  if (pathname === '/login' || pathname === '/signup') {
+    // Let the user access login/signup pages
+    return NextResponse.next();
   }
 
-  // If the user is authenticated and tries to access login or signup, redirect to the app
-  if ((pathname === '/login' || pathname === '/signup') && token) {
-    return NextResponse.redirect(new URL('/app', request.url));
+  if (pathname.startsWith('/app')) {
+    // Let the client-side auth check handle redirection
+    // for the app routes.
+    return NextResponse.next();
   }
 
   return NextResponse.next();

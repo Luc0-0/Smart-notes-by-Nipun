@@ -1,3 +1,5 @@
+'use client';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,6 +24,12 @@ const features = [
 ];
 
 export default function LandingPage() {
+  const [year, setYear] = useState(new Date().getFullYear());
+
+  useEffect(() => {
+    setYear(new Date().getFullYear());
+  }, []);
+
   return (
     <div className="flex min-h-screen flex-col">
       <header className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
@@ -97,7 +105,7 @@ export default function LandingPage() {
       </main>
       <footer className="py-6 border-t">
         <div className="container mx-auto px-4 md:px-6 text-center text-foreground/60">
-          <p>&copy; {new Date().getFullYear()} Smart Notes. All rights reserved.</p>
+          <p>&copy; {year} Smart Notes. All rights reserved.</p>
           <p>Designed by Nipun Sujesh</p>
         </div>
       </footer>
