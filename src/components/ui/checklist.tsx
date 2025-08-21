@@ -6,6 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Plus, Trash2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export type ChecklistItemType = {
   id: string;
