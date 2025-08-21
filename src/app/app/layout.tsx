@@ -9,6 +9,7 @@ import { Header } from '@/components/header';
 import { OnboardingWizard } from '@/components/onboarding-wizard';
 import { useAuth } from '@/lib/firebase/auth-provider';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
