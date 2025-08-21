@@ -7,7 +7,12 @@ import { useAuth } from '@/lib/firebase/auth-provider';
 import type { Note } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 
-export default function NotePage({ params: { noteId } }: { params: { noteId: string } }) {
+type NotePageProps = {
+  params: { noteId: string };
+};
+
+export default function NotePage({ params }: NotePageProps) {
+  const { noteId } = params;
   const { user } = useAuth();
   const [note, setNote] = useState<Note | null>(null);
   const [loading, setLoading] = useState(true);
