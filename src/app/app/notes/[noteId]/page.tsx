@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/firebase/auth-provider';
 import type { Note } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 
-export default function NotePage({ params }: { params: { noteId: string } }) {
+export default function NotePage({ params: { noteId } }: { params: { noteId: string } }) {
   const { user } = useAuth();
   const [note, setNote] = useState<Note | null>(null);
   const [loading, setLoading] = useState(true);
@@ -18,7 +18,7 @@ export default function NotePage({ params }: { params: { noteId: string } }) {
 
     const fetchNote = async () => {
       setLoading(true);
-      const fetchedNote = await getNote(params.noteId);
+      const fetchedNote = await getNote(noteId);
       
       if (fetchedNote) {
         if (fetchedNote.userId === user.uid) {
@@ -33,7 +33,7 @@ export default function NotePage({ params }: { params: { noteId: string } }) {
     };
 
     fetchNote();
-  }, [params.noteId, user]);
+  }, [noteId, user]);
 
   if (loading) {
     return (
