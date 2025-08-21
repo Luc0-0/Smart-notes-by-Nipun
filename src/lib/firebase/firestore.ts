@@ -15,6 +15,19 @@ import type { Note } from '@/lib/types';
 
 const notesCollection = collection(db, 'notes');
 
+// Helper to convert Firestore doc to Note type
+const docToNote = (doc: any): Note => {
+  const data = doc.data();
+  return {
+    id: doc.id,
+    ...data,
+    createdAt: data.createdAt?.toDate() ?? new Date(),
+    updatedAt: data.updatedAt?.toDate() ?? new Date(),
+    meetingDate: data.meetingDate ? data.meetingDate.toDate() : undefined,
+  } as Note;
+};
+
+
 // Create a new note
 export const addNote = async (noteData: Partial<Note>) => {
   try {
@@ -51,16 +64,7 @@ export const getNote = async (noteId: string): Promise<Note | null> => {
     const noteRef = doc(db, 'notes', noteId);
     const docSnap = await getDoc(noteRef);
     if (docSnap.exists()) {
-      const data = docSnap.data();
-      // Convert Firestore Timestamps to JS Date objects for client-side usage
-      const note: Note = {
-        id: docSnap.id,
-        ...data,
-        createdAt: data.createdAt?.toDate() ?? new Date(),
-        updatedAt: data.updatedAt?.toDate() ?? new Date(),
-        meetingDate: data.meetingDate ? data.meetingDate.toDate() : undefined,
-      } as Note;
-      return note;
+      return docToNote(docSnap);
     } else {
       console.log('No such document!');
       return null;
@@ -73,24 +77,29 @@ export const getNote = async (noteId: string): Promise<Note | null> => {
 
 
 // Get all notes for a user
-export const getNotes = async (userId: string) => {
+export const getNotes = async (userId: string): Promise<Note[]> => {
   try {
     const q = query(notesCollection, where('userId', '==', userId));
     const querySnapshot = await getDocs(q);
-    const notes: Note[] = [];
-    querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        notes.push({ 
-            id: doc.id,
-            ...data,
-            createdAt: data.createdAt?.toDate() ?? new Date(),
-            updatedAt: data.updatedAt?.toDate() ?? new Date(),
-            meetingDate: data.meetingDate ? data.meetingDate.toDate() : undefined,
-         } as Note);
-    });
-    return notes;
+    return querySnapshot.docs.map(docToNote);
   } catch (error) {
     console.error('Error getting documents: ', error);
+    return [];
+  }
+};
+
+// Get all notes for a user within a specific notebook
+export const getNotesByNotebook = async (userId: string, notebookId: string): Promise<Note[]> => {
+  try {
+    const q = query(
+      notesCollection, 
+      where('userId', '==', userId), 
+      where('notebookId', '==', notebookId)
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(docToNote);
+  } catch (error) {
+    console.error('Error getting documents by notebook: ', error);
     return [];
   }
 };

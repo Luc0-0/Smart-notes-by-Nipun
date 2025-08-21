@@ -1,5 +1,8 @@
 
+'use client';
+
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import {
   Notebook,
   Tag,
@@ -28,6 +31,8 @@ const menuItems = [
 ];
 
 export function SidebarNav() {
+  const pathname = usePathname();
+
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
@@ -43,9 +48,7 @@ export function SidebarNav() {
               <SidebarMenuButton
                 asChild
                 tooltip={item.label}
-                // A real implementation would use usePathname() to check for active state
-                // For now, we'll just show the first item as active for demonstration
-                isActive={item.href === '/app/notes'} 
+                isActive={pathname === item.href} 
               >
                 <Link href={item.href}>
                   {item.icon}
@@ -59,7 +62,7 @@ export function SidebarNav() {
       <SidebarFooter>
         <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip="Settings">
+              <SidebarMenuButton asChild tooltip="Settings" isActive={pathname === '/app/settings'}>
                 <Link href="/app/settings">
                   <Settings />
                   <span>Settings</span>

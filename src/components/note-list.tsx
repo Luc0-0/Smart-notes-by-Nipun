@@ -2,27 +2,44 @@
 'use client';
 
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Book, Briefcase, BrainCircuit, ShoppingCart } from 'lucide-react';
 import { useAuth } from '@/lib/firebase/auth-provider';
-import { getNotes } from '@/lib/firebase/firestore';
-import type { Note } from '@/lib/types';
+import { getNotes, getNotesByNotebook } from '@/lib/firebase/firestore';
+import type { Note, Notebook } from '@/lib/types';
 import { useEffect, useState }from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 
+const notebooks: Omit<Notebook, 'description'>[] = [
+  { id: 'general', title: 'General', icon: <Book /> },
+  { id: 'projects', title: 'Projects', icon: <Briefcase /> },
+  { id: 'meetings', title: 'Meetings', icon: <BrainCircuit /> },
+  { id: 'personal', title: 'Personal', icon: <ShoppingCart /> },
+];
 
 export function NoteList() {
     const { user } = useAuth();
+    const searchParams = useSearchParams();
+    const notebookId = searchParams.get('notebook') as Note['notebookId'] | null;
+    
     const [notes, setNotes] = useState<Note[]>([]);
     const [loading, setLoading] = useState(true);
+
+    const currentNotebook = notebookId ? notebooks.find(n => n.id === notebookId) : null;
+    const pageTitle = currentNotebook ? `${currentNotebook.title} Notes` : 'All Notes';
+    const pageDescription = currentNotebook 
+        ? `Notes from your '${currentNotebook.title}' notebook.` 
+        : "Here's a list of all your notes.";
 
     useEffect(() => {
         if (user) {
             setLoading(true);
-            getNotes(user.uid).then((userNotes) => {
-                // Sort notes by most recently updated
+            const fetchNotes = notebookId ? getNotesByNotebook(user.uid, notebookId) : getNotes(user.uid);
+
+            fetchNotes.then((userNotes) => {
                 const sortedNotes = userNotes.sort((a, b) => {
                     const dateA = a.updatedAt instanceof Date ? a.updatedAt.getTime() : a.updatedAt.toMillis();
                     const dateB = b.updatedAt instanceof Date ? b.updatedAt.getTime() : b.updatedAt.toMillis();
@@ -32,7 +49,7 @@ export function NoteList() {
                 setLoading(false);
             });
         }
-    }, [user]);
+    }, [user, notebookId]);
 
     if (loading) {
         return (
@@ -66,11 +83,11 @@ export function NoteList() {
         <div className="space-y-6">
         <div className="flex items-center justify-between">
             <div>
-            <h1 className="text-3xl font-bold font-headline">All Notes</h1>
-            <p className="text-muted-foreground">Here&apos;s a list of all your notes.</p>
+            <h1 className="text-3xl font-bold font-headline">{pageTitle}</h1>
+            <p className="text-muted-foreground">{pageDescription}</p>
             </div>
             <Button asChild>
-            <Link href="/app/notes/new">
+            <Link href={`/app/notes/new${notebookId ? `?notebook=${notebookId}` : ''}`}>
                 <PlusCircle className="mr-2 h-4 w-4" />
                 New Note
             </Link>
@@ -85,12 +102,12 @@ export function NoteList() {
                     <CardHeader>
                         <CardTitle className="truncate">{note.title || 'Untitled Note'}</CardTitle>
                         <CardDescription>
-                            {formatDistanceToNow(new Date(note.updatedAt as Date), { addSuffix: true })}
+                            Updated {formatDistanceToNow(new Date(note.updatedAt as Date), { addSuffix: true })}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="flex-1">
                         <p className="text-foreground/70 line-clamp-3">
-                            {note.content || "No additional content."}
+                            {note.content || note.projectIdeas || "No additional content."}
                         </p>
                     </CardContent>
                     </Card>
@@ -102,7 +119,7 @@ export function NoteList() {
                 <h3 className="text-xl font-semibold">No notes yet!</h3>
                 <p className="text-muted-foreground mt-2">Click the button below to create your first note.</p>
                 <Button asChild className="mt-4">
-                    <Link href="/app/notes/new">
+                    <Link href={`/app/notes/new${notebookId ? `?notebook=${notebookId}` : ''}`}>
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Create a Note
                     </Link>
