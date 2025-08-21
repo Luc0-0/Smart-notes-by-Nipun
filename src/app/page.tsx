@@ -56,7 +56,7 @@ export default function LandingPage() {
                 <span className="text-primary">Amplify Your Mind.</span>
               </h1>
               <p className="mt-6 text-lg text-foreground/80">
-                Welcome to Smart Notes: Luc Edition. The intelligent, AI-powered
+                Welcome to Smart Notes. The intelligent, AI-powered
                 note-taking app that helps you connect ideas and unleash your
                 creativity.
               </p>
@@ -98,6 +98,7 @@ export default function LandingPage() {
       <footer className="py-6 border-t">
         <div className="container mx-auto px-4 md:px-6 text-center text-foreground/60">
           <p>&copy; {new Date().getFullYear()} Smart Notes. All rights reserved.</p>
+          <p>Designed by Nipun Sujesh</p>
         </div>
       </footer>
     </div>

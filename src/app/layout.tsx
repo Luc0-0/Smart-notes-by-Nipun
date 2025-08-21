@@ -3,7 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'Smart Notes: Luc Edition',
+  title: 'Smart Notes',
   description: 'An intelligent notes app powered by Firebase and Gemini.',
 };
 
