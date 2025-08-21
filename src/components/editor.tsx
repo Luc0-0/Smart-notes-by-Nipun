@@ -1,6 +1,8 @@
+
 'use client';
 
 import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Bold,
   Italic,
@@ -26,21 +28,26 @@ import {
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/lib/firebase/auth-provider';
+import { addNote, updateNote } from '@/lib/firebase/firestore';
+import type { Note } from '@/lib/types';
 import { summarizeText } from '@/ai/flows/summarize-flow';
 import { generateOutline } from '@/ai/flows/outline-flow';
 
-type Note = {
-  id: string;
-  title: string;
-  content: string;
+type EditorProps = {
+  note?: Note | null;
 };
 
-export function Editor({ note }: { note?: Note }) {
+export function Editor({ note }: EditorProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { user } = useAuth();
+  const { toast } = useToast();
+
   const [title, setTitle] = useState(note?.title || '');
   const [content, setContent] = useState(note?.content || '');
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const { toast } = useToast();
 
   const handleSummarize = async () => {
     if (!content) {
@@ -84,7 +91,7 @@ export function Editor({ note }: { note?: Note }) {
     setIsAiLoading(true);
     try {
       const result = await generateOutline({ title });
-      setContent(content + '\n' + result.outline);
+      setContent((prevContent) => prevContent + '\n\n' + result.outline);
       toast({
         title: 'Outline Generated!',
         description: 'An outline has been added to your note.',
@@ -102,15 +109,36 @@ export function Editor({ note }: { note?: Note }) {
   };
   
   const handleSave = async () => {
+    if (!user) {
+        toast({ variant: 'destructive', title: 'You must be logged in to save.' });
+        return;
+    }
     setIsSaving(true);
-    // In a real app, you would save the note to a database here.
-    // For now, we'll just simulate a save with a timeout.
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsSaving(false);
-    toast({
-      title: 'Note Saved!',
-      description: 'Your changes have been saved successfully.',
-    });
+    
+    try {
+      if (note?.id) {
+        // Update existing note
+        await updateNote(note.id, { title, content });
+        toast({ title: 'Note Updated!', description: 'Your changes have been saved.' });
+      } else {
+        // Create new note
+        const notebookId = searchParams.get('notebook') || 'general';
+        const { id: newNoteId } = await addNote({ 
+            title, 
+            content, 
+            userId: user.uid, 
+            notebookId: notebookId as Note['notebookId']
+        });
+        toast({ title: 'Note Saved!', description: 'Your new note has been created.' });
+        // Redirect to the new note's page
+        router.replace(`/app/notes/${newNoteId}`);
+      }
+    } catch (error) {
+        console.error("Save error:", error);
+        toast({ variant: 'destructive', title: 'Save failed', description: 'Could not save your note. Please try again.' });
+    } finally {
+        setIsSaving(false);
+    }
   }
 
   return (
@@ -124,7 +152,7 @@ export function Editor({ note }: { note?: Note }) {
             className="text-2xl font-bold border-none shadow-none focus-visible:ring-0 h-auto p-0 font-headline bg-transparent"
             disabled={isAiLoading || isSaving}
           />
-          <Button onClick={handleSave} disabled={isAiLoading || isSaving}>
+          <Button onClick={handleSave} disabled={isAiLoading || isSaving || !title}>
             {isSaving ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
