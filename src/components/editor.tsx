@@ -164,36 +164,40 @@ export function Editor({ note }: EditorProps) {
     }
     setIsSaving(true);
 
-    const noteData: Partial<Note> = {
+    const baseNoteData = {
         title,
         content,
         userId: user.uid,
         notebookId,
-        // Meeting fields
-        meetingDate: meetingDate,
-        meetingLink,
-        discussionTopics,
-        actionItems,
-        // Project fields
-        projectFeatures,
-        projectIdeas,
-        projectTimeline,
-        // Personal fields
-        habitName,
-        habitGoal,
-        habitStreak,
-        groceryList,
-        collectionType,
-        collectionItems,
     };
+
+    const noteData: Partial<Note> = { ...baseNoteData };
+
+    if (notebookId === 'meetings') {
+        if (meetingDate) noteData.meetingDate = meetingDate;
+        if (meetingLink) noteData.meetingLink = meetingLink;
+        if (discussionTopics.length > 0) noteData.discussionTopics = discussionTopics;
+        if (actionItems.length > 0) noteData.actionItems = actionItems;
+    } else if (notebookId === 'projects') {
+        if (projectFeatures.length > 0) noteData.projectFeatures = projectFeatures;
+        if (projectIdeas) noteData.projectIdeas = projectIdeas;
+        if (projectTimeline) noteData.projectTimeline = projectTimeline;
+    } else if (notebookId === 'personal') {
+        if (habitName) noteData.habitName = habitName;
+        if (habitGoal) noteData.habitGoal = habitGoal;
+        if (habitStreak) noteData.habitStreak = habitStreak;
+        if (groceryList.length > 0) noteData.groceryList = groceryList;
+        if (collectionType) noteData.collectionType = collectionType;
+        if (collectionItems.length > 0) noteData.collectionItems = collectionItems;
+    }
     
     try {
       if (note?.id) {
-        // Update existing note
+        // Update existing note - pass the cleaned noteData object
         await updateNote(note.id, noteData);
         toast({ title: 'Note Updated!', description: 'Your changes have been saved.' });
       } else {
-        // Create new note
+        // Create new note - pass the cleaned noteData object
         const { id: newNoteId } = await addNote(noteData);
         toast({ title: 'Note Saved!', description: 'Your new note has been created.' });
         router.replace(`/app/notes/${newNoteId}`);
