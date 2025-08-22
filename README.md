@@ -76,24 +76,4 @@ Your application will be available at `http://localhost:9002` and the Genkit dev
 
 This project is configured for a professional CI/CD (Continuous Integration/Continuous Deployment) workflow using Firebase App Hosting and GitHub.
 
-### Step 1: Push to a Git Repository
-Initialize a Git repository and push your project to a new repository on GitHub.
-```bash
-git init
-git add .
-git commit -m "Initial commit of Smart Notes application"
 
-# Follow GitHub's instructions to connect and push your local repo
-git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
-git branch -M main
-git push -u origin main
-```
-
-### Step 2: Connect Firebase App Hosting to GitHub
-1.  Open your project in the **Firebase Console**.
-2.  Navigate to the **App Hosting** section.
-3.  Select your backend and click **"Connect GitHub repository"**.
-4.  Follow the prompts to authorize Firebase and select the repository you just created.
-5.  Configure the production branch to be `main`.
-
-Once connected, every `git push` to your `main` branch will automatically trigger a new build and deploy your application. You can monitor the status of these deployments directly in the Firebase Console.
