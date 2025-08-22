@@ -2,7 +2,7 @@
 
 This project is a feature-rich, intelligent note-taking application built with Next.js, Firebase, and Google's Gemini AI through Genkit. It provides a seamless and powerful experience for capturing thoughts, organizing projects, and enhancing creativity with AI-driven tools.
 
-This application was bootstrapped and developed within Firebase Studio.
+
 
 ## Core Features
 
