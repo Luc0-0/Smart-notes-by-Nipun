@@ -9,6 +9,8 @@ import {
   getDocs,
   serverTimestamp,
   deleteDoc,
+  orderBy,
+  limit,
 } from 'firebase/firestore';
 import { db } from './config';
 import type { Note } from '@/lib/types';
@@ -99,6 +101,23 @@ export const getNotes = async (userId: string): Promise<Note[]> => {
     return [];
   }
 };
+
+// Get recent notes for a user
+export const getRecentNotes = async (userId: string, count: number): Promise<Note[]> => {
+  try {
+    const q = query(
+      notesCollection,
+      where('userId', '==', userId),
+      orderBy('updatedAt', 'desc'),
+      limit(count)
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(docToNote);
+  } catch (error) {
+    console.error('Error getting recent documents: ', error);
+    return [];
+  }
+}
 
 // Get all notes for a user within a specific notebook
 export const getNotesByNotebook = async (userId: string, notebookId: string): Promise<Note[]> => {

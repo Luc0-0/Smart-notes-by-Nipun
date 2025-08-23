@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/firebase/auth-provider';
-import { getNotes } from '@/lib/firebase/firestore';
+import { getNotes, getRecentNotes } from '@/lib/firebase/firestore';
 import type { Note, Notebook } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -51,6 +51,7 @@ export function Dashboard() {
   const { user } = useAuth();
   const [greeting, setGreeting] = useState('');
   const [notes, setNotes] = useState<Note[]>([]);
+  const [recentNotes, setRecentNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -63,13 +64,12 @@ export function Dashboard() {
   useEffect(() => {
     if (user) {
       setLoading(true);
-      getNotes(user.uid).then((userNotes) => {
-        const sortedNotes = userNotes.sort((a, b) => {
-          const dateA = a.updatedAt instanceof Date ? a.updatedAt.getTime() : a.updatedAt.toMillis();
-          const dateB = b.updatedAt instanceof Date ? b.updatedAt.getTime() : b.updatedAt.toMillis();
-          return dateB - dateA;
-        });
-        setNotes(sortedNotes);
+      Promise.all([
+        getNotes(user.uid),
+        getRecentNotes(user.uid, 5)
+      ]).then(([userNotes, userRecentNotes]) => {
+        setNotes(userNotes);
+        setRecentNotes(userRecentNotes);
         setLoading(false);
       });
     }
@@ -94,8 +94,6 @@ export function Dashboard() {
     name: nb.title,
     total: notebookCounts[nb.id] || 0,
   }));
-  
-  const recentNotes = notes.slice(0, 5);
 
 
   if (loading) {
