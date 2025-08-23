@@ -71,3 +71,5 @@ Your application will be available at `http://localhost:9002` and the Genkit dev
 ## Deployment: Professional CI/CD Workflow
 
 This project is configured for a professional CI/CD (Continuous Integration/Continuous Deployment) workflow using Firebase App Hosting and GitHub.
+
+<!-- Trigger new deployment -->
