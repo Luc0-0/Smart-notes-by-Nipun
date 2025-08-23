@@ -1,13 +1,9 @@
 
-'use client';
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useAuth } from '@/lib/firebase/auth-provider';
-import { getNotes, getRecentNotes } from '@/lib/firebase/firestore';
-import type { Note, Notebook } from '@/lib/types';
+import { getGreeting, getDashboardStats, getRecentNotes } from '@/lib/firebase/firestore-server';
+import type { Notebook } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
 import { PlusCircle, Book, Briefcase, BrainCircuit, ShoppingCart, ArrowRight } from 'lucide-react';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts"
 import {
@@ -18,7 +14,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel"
 import { formatDistanceToNow } from 'date-fns';
-
+import { auth } from 'firebase-admin';
 
 const notebooks: Notebook[] = [
   {
@@ -47,85 +43,30 @@ const notebooks: Notebook[] = [
   },
 ];
 
-export function Dashboard() {
-  const { user } = useAuth();
-  const [greeting, setGreeting] = useState('');
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [recentNotes, setRecentNotes] = useState<Note[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const hours = new Date().getHours();
-    if (hours < 12) setGreeting('Good morning');
-    else if (hours < 18) setGreeting('Good afternoon');
-    else setGreeting('Good evening');
-  }, []);
-
-  useEffect(() => {
-    if (user) {
-      setLoading(true);
-      Promise.all([
-        getNotes(user.uid),
-        getRecentNotes(user.uid, 5)
-      ]).then(([userNotes, userRecentNotes]) => {
-        setNotes(userNotes);
-        setRecentNotes(userRecentNotes);
-        setLoading(false);
-      });
-    }
-  }, [user]);
-
-  const notesThisWeek = notes.filter(note => {
-    const noteDate = (note.createdAt as Date);
-    const aWeekAgo = new Date();
-    aWeekAgo.setDate(aWeekAgo.getDate() - 7);
-    return noteDate > aWeekAgo;
-  }).length;
+export async function Dashboard() {
+  const greeting = getGreeting();
+  const stats = await getDashboardStats();
+  const recentNotes = await getRecentNotes(5);
   
-  const notebookCounts = notes.reduce((acc, note) => {
-    acc[note.notebookId] = (acc[note.notebookId] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const mostActiveNotebookName = stats.mostActiveNotebookId
+    ? notebooks.find(n => n.id === stats.mostActiveNotebookId)?.title
+    : 'N/A';
   
-  const mostActiveNotebook = Object.entries(notebookCounts).sort((a, b) => b[1] - a[1])[0];
-  const mostActiveNotebookName = mostActiveNotebook ? notebooks.find(n => n.id === mostActiveNotebook[0])?.title : 'N/A';
-
   const chartData = notebooks.map(nb => ({
     name: nb.title,
-    total: notebookCounts[nb.id] || 0,
+    total: stats.notebookCounts[nb.id] || 0,
   }));
 
-
-  if (loading) {
-    return (
-      <div className="space-y-8">
-        <Skeleton className="h-9 w-1/2" />
-        <div className="grid gap-4 md:grid-cols-3">
-          {[...Array(3)].map((_, i) => (
-            <Card key={i}>
-              <CardHeader><Skeleton className="h-6 w-1/2" /></CardHeader>
-              <CardContent><Skeleton className="h-8 w-1/3" /></CardContent>
-            </Card>
-          ))}
-        </div>
-        <div>
-          <Skeleton className="h-8 w-1/4 mb-4" />
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {[...Array(3)].map((_, i) => (
-               <Card key={i} className="h-40"><CardHeader><Skeleton className="h-6 w-full" /><Skeleton className="h-4 w-1/2 mt-2" /></CardHeader><CardContent><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-2/3 mt-2" /></CardContent></Card>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // This is a placeholder for the user's name until we fetch it client-side
+  // or pass it down from a server-side auth provider.
+  const userName = 'User';
 
   return (
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
         <div>
           <h1 className="text-3xl font-bold font-headline">
-            {greeting}, {user?.displayName?.split(' ')[0] || 'User'}!
+            {greeting}, {userName}!
           </h1>
           <p className="text-muted-foreground">Let's make today productive.</p>
         </div>
@@ -144,7 +85,7 @@ export function Dashboard() {
              <Book className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{notes.length}</div>
+            <div className="text-2xl font-bold">{stats.totalNotes}</div>
             <p className="text-xs text-muted-foreground">notes created across all notebooks</p>
           </CardContent>
         </Card>
@@ -154,7 +95,7 @@ export function Dashboard() {
             <Briefcase className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+{notesThisWeek}</div>
+            <div className="text-2xl font-bold">+{stats.notesThisWeek}</div>
             <p className="text-xs text-muted-foreground">new notes in the last 7 days</p>
           </CardContent>
         </Card>
@@ -220,7 +161,7 @@ export function Dashboard() {
                                 {notebook.icon}
                                 <div>
                                     <CardTitle className="text-lg">{notebook.title}</CardTitle>
-                                    <p className="text-sm text-muted-foreground">{notebookCounts[notebook.id] || 0} notes</p>
+                                    <p className="text-sm text-muted-foreground">{stats.notebookCounts[notebook.id] || 0} notes</p>
                                 </div>
                             </div>
                             <Button variant="ghost" size="icon" asChild>
