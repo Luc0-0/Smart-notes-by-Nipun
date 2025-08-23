@@ -127,10 +127,11 @@ export function Editor({ note }: EditorProps) {
   const handleAiAction = async (
     action: (input: any) => Promise<any>,
     input: any,
-    messages: { loading: string, success: string, error: string }
+    messages: { loading: string, success: string, error: string },
+    useContent = true
   ) => {
     const textToProcess = content || projectIdeas;
-     if (!textToProcess) {
+     if (useContent && !textToProcess) {
       toast({
         variant: 'destructive',
         title: 'Cannot perform action',
