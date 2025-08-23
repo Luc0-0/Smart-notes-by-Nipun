@@ -11,7 +11,7 @@ initAdminSDK();
 const db = getFirestore(getAdminApp());
 const notesCollection = db.collection('notes');
 
-async function getUserId(): Promise<string | null> {
+async function getAuthenticatedUser() {
   try {
     const cookieStore = cookies();
     const sessionCookie = cookieStore.get('session')?.value;
@@ -19,9 +19,10 @@ async function getUserId(): Promise<string | null> {
       return null;
     }
     const decodedToken = await auth().verifySessionCookie(sessionCookie, true);
-    return decodedToken.uid;
+    const user = await auth().getUser(decodedToken.uid);
+    return user;
   } catch (error) {
-    console.error('Error verifying session cookie:', error);
+    console.error('Error verifying session cookie or getting user:', error);
     return null;
   }
 }
@@ -45,21 +46,30 @@ export function getGreeting() {
   return 'Good evening';
 }
 
-export async function getDashboardStats() {
-  const userId = await getUserId();
-  if (!userId) {
-    return { totalNotes: 0, notesThisWeek: 0, mostActiveNotebookId: null, notebookCounts: {} };
+export async function getDashboardData() {
+  const user = await getAuthenticatedUser();
+  if (!user?.uid) {
+    return { 
+      userName: 'User',
+      stats: { totalNotes: 0, notesThisWeek: 0, mostActiveNotebookId: null, notebookCounts: {} },
+      recentNotes: []
+    };
   }
+  
+  const userId = user.uid;
   
   const allNotesQuery = notesCollection.where('userId', '==', userId);
 
   const aWeekAgo = new Date();
   aWeekAgo.setDate(aWeekAgo.getDate() - 7);
   const notesThisWeekQuery = allNotesQuery.where('createdAt', '>=', aWeekAgo);
+  
+  const recentNotesQuery = allNotesQuery.orderBy('updatedAt', 'desc').limit(5);
 
-  const [allNotesSnapshot, notesThisWeekSnapshot] = await Promise.all([
+  const [allNotesSnapshot, notesThisWeekSnapshot, recentNotesSnapshot] = await Promise.all([
     allNotesQuery.get(),
     notesThisWeekQuery.get(),
+    recentNotesQuery.get(),
   ]);
 
   const totalNotes = allNotesSnapshot.size;
@@ -75,27 +85,18 @@ export async function getDashboardStats() {
     ? Object.entries(notebookCounts).sort((a, b) => b[1] - a[1])[0][0]
     : null;
     
-  return {
+  const stats = {
     totalNotes,
     notesThisWeek,
     mostActiveNotebookId,
     notebookCounts,
   };
-}
-
-export const getRecentNotes = async (count: number): Promise<Note[]> => {
-  const userId = await getUserId();
-  if (!userId) return [];
   
-  try {
-    const q = notesCollection
-      .where('userId', '==', userId)
-      .orderBy('updatedAt', 'desc')
-      .limit(count);
-    const querySnapshot = await q.get();
-    return querySnapshot.docs.map(docToNote);
-  } catch (error) {
-    console.error('Error getting recent documents: ', error);
-    return [];
-  }
+  const recentNotes = recentNotesSnapshot.docs.map(docToNote);
+  
+  return {
+    userName: user.displayName || 'User',
+    stats,
+    recentNotes
+  };
 }

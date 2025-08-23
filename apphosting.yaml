@@ -1,3 +1,4 @@
+
 # Settings to manage and configure a Firebase App Hosting backend.
 # https://firebase.google.com/docs/app-hosting/configure
 
@@ -10,6 +11,8 @@ runConfig:
   env:
     - variable: GEMINI_API_KEY
       secret: GEMINI_API_KEY
+    - variable: FIREBASE_SERVICE_ACCOUNT_KEY
+      secret: FIREBASE_SERVICE_ACCOUNT_KEY
 
 # vpcConnector:
 #   name: "projects/my-project/locations/us-central1/connectors/my-connector"

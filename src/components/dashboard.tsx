@@ -1,6 +1,6 @@
 
 import Link from 'next/link';
-import { getGreeting, getDashboardStats, getRecentNotes } from '@/lib/firebase/firestore-server';
+import { getGreeting, getDashboardData } from '@/lib/firebase/firestore-server';
 import type { Notebook } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -14,7 +14,6 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel"
 import { formatDistanceToNow } from 'date-fns';
-import { auth } from 'firebase-admin';
 
 const notebooks: Notebook[] = [
   {
@@ -45,8 +44,7 @@ const notebooks: Notebook[] = [
 
 export async function Dashboard() {
   const greeting = getGreeting();
-  const stats = await getDashboardStats();
-  const recentNotes = await getRecentNotes(5);
+  const { userName, stats, recentNotes } = await getDashboardData();
   
   const mostActiveNotebookName = stats.mostActiveNotebookId
     ? notebooks.find(n => n.id === stats.mostActiveNotebookId)?.title
@@ -56,10 +54,6 @@ export async function Dashboard() {
     name: nb.title,
     total: stats.notebookCounts[nb.id] || 0,
   }));
-
-  // This is a placeholder for the user's name until we fetch it client-side
-  // or pass it down from a server-side auth provider.
-  const userName = 'User';
 
   return (
     <div className="space-y-8">
