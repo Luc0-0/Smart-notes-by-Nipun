@@ -170,6 +170,7 @@ export function Editor({ note }: EditorProps) {
 
   const handleRewrite = () => handleAiAction(rewriteText, {}, { loading: 'Rewriting...', success: 'Rewritten!', error: 'Rewrite' });
   const handleSummarize = () => handleAiAction(summarizeText, {}, { loading: 'Summarizing...', success: 'Summarized!', error: 'Summarization' });
+  
   const handleGenerateOutline = async () => {
     if (!title) {
       toast({ variant: 'destructive', title: 'Please enter a title first.' });
@@ -188,37 +189,45 @@ export function Editor({ note }: EditorProps) {
       setIsAiLoading(false);
     }
   };
+
   const handleImproveTone = (tone: string) => handleAiAction(improveTone, { tone }, { loading: `Changing tone to ${tone}...`, success: 'Tone improved!', error: 'Tone improvement' });
   const handleExtractActionItems = () => handleAiAction(extractActionItems, {}, { loading: 'Extracting action items...', success: 'Action items extracted!', error: 'Extraction' });
 
+  const handleGenerateTags = async () => {
+    const noteContentForTags = [title, content, projectIdeas].filter(Boolean).join('\n');
+    if (!noteContentForTags) {
+      toast({ variant: 'destructive', title: 'Cannot generate tags', description: 'Please enter a title or some content first.' });
+      return;
+    }
+    setIsAiLoading(true);
+    toast({ title: 'Generating tags...' });
+    try {
+      const result = await generateTags({ text: noteContentForTags });
+      const newTags = result.tags.filter(tag => !tags.includes(tag));
+      setTags(prevTags => [...prevTags, ...newTags]);
+      toast({ title: 'Tags generated!' });
+    } catch (error) {
+      console.error("Auto-tagging error:", error);
+      toast({ variant: 'destructive', title: 'Tag generation failed.' });
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
 
-  const handleSave = async (autoSave = false) => {
+
+  const handleSave = async () => {
     if (!user) {
         toast({ variant: 'destructive', title: 'You must be logged in to save.' });
         return;
     }
     setIsSaving(true);
 
-    const noteContentForTags = [title, content, projectIdeas].filter(Boolean).join('\n');
-    let finalTags = tags;
-
-    if (!autoSave && noteContentForTags) {
-      try {
-        const result = await generateTags({ text: noteContentForTags });
-        const newTags = result.tags.filter(tag => !finalTags.includes(tag));
-        finalTags = [...finalTags, ...newTags];
-      } catch (error) {
-        console.error("Auto-tagging error:", error);
-      }
-    }
-
-
     const baseNoteData = {
         title,
         content,
         userId: user.uid,
         notebookId,
-        tags: finalTags,
+        tags,
         isArchived,
     };
 
@@ -245,15 +254,15 @@ export function Editor({ note }: EditorProps) {
     try {
       if (note?.id) {
         await updateNote(note.id, noteData);
-        if (!autoSave) toast({ title: 'Note Updated!', description: 'Your changes have been saved.' });
+        toast({ title: 'Note Updated!', description: 'Your changes have been saved.' });
       } else {
         const { id: newNoteId } = await addNote(noteData);
-        if (!autoSave) toast({ title: 'Note Saved!', description: 'Your new note has been created.' });
+        toast({ title: 'Note Saved!', description: 'Your new note has been created.' });
         router.replace(`/app/notes/${newNoteId}`);
       }
     } catch (error) {
         console.error("Save error:", error);
-        if (!autoSave) toast({ variant: 'destructive', title: 'Save failed', description: 'Could not save your note. Please try again.' });
+        toast({ variant: 'destructive', title: 'Save failed', description: 'Could not save your note. Please try again.' });
     } finally {
         setIsSaving(false);
     }
@@ -440,7 +449,7 @@ export function Editor({ note }: EditorProps) {
                 </AlertDialog>
               </>
             )}
-            <Button onClick={() => handleSave(false)} disabled={isAiLoading || isSaving || !title}>
+            <Button onClick={() => handleSave()} disabled={isAiLoading || isSaving || !title}>
               {isSaving ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
@@ -536,8 +545,14 @@ export function Editor({ note }: EditorProps) {
           />
         </div>
         <div className="p-4 border-t">
-          <Label className="flex items-center gap-2 mb-2"><Tags className="w-4 h-4"/> Tags</Label>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex items-center justify-between mb-2">
+            <Label className="flex items-center gap-2"><Tags className="w-4 h-4"/> Tags</Label>
+            <Button variant="ghost" size="sm" onClick={handleGenerateTags} disabled={isAiLoading}>
+              {isAiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+              Generate Tags
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-2 items-center">
             {tags.map((tag) => (
               <Badge key={tag} variant="secondary" className="pl-3 pr-1">
                 {tag}
