@@ -51,7 +51,7 @@ export function OnboardingWizard() {
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-headline">Welcome to Smart Notes!</DialogTitle>
+          <DialogTitle className="text-2xl font-headline">Welcome to Elevated Notes!</DialogTitle>
           <DialogDescription>
             Let's get you set up in just a few clicks.
           </DialogDescription>

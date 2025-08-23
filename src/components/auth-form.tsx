@@ -38,7 +38,7 @@ export function AuthForm({ type }: { type: AuthFormType }) {
   const description =
     type === 'login'
       ? 'Sign in to access your notes.'
-      : 'Start your journey with Smart Notes.';
+      : 'Start your journey with Elevated Notes.';
   const buttonText = type === 'login' ? 'Login' : 'Sign Up';
   const footerText =
     type === 'login' ? (

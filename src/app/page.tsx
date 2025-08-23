@@ -35,7 +35,7 @@ export default function LandingPage() {
       <header className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
         <Link href="/" className="flex items-center gap-2">
           <BrainCircuit className="h-8 w-8 text-primary" />
-          <span className="text-xl font-bold">Smart Notes</span>
+          <span className="text-xl font-bold">Elevated Notes</span>
         </Link>
         <nav className="flex items-center gap-4">
           <Button variant="ghost" asChild>
@@ -64,7 +64,7 @@ export default function LandingPage() {
                 <span className="text-primary">Amplify Your Mind.</span>
               </h1>
               <p className="mt-6 text-lg text-foreground/80">
-                Welcome to Smart Notes. The intelligent, AI-powered
+                Welcome to Elevated Notes. The intelligent, AI-powered
                 note-taking app that helps you connect ideas and unleash your
                 creativity.
               </p>
@@ -105,7 +105,8 @@ export default function LandingPage() {
       </main>
       <footer className="py-6 border-t">
         <div className="container mx-auto px-4 md:px-6 text-center text-foreground/60">
-          <p>&copy; {year} Smart Notes. All rights reserved.</p>
+          <p>&copy; {year} Elevated Notes. All rights reserved.</p>
+          <p className="text-xs">By Nipun</p>
         </div>
       </footer>
     </div>

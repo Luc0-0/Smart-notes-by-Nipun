@@ -5,7 +5,7 @@ import { AuthProvider } from '@/lib/firebase/auth-provider';
 import { ThemeProvider } from '@/components/theme-provider';
 
 export const metadata: Metadata = {
-  title: 'Smart Notes',
+  title: 'Elevated Notes',
   description: 'An intelligent notes app powered by Firebase and Gemini.',
 };
 

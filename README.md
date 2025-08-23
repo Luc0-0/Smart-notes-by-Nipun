@@ -1,8 +1,6 @@
-# Smart Notes: An Intelligent Note-Taking App
+# Elevated Notes: An Intelligent Note-Taking App
 
 This project is a feature-rich, intelligent note-taking application built with Next.js, Firebase, and Google's Gemini AI through Genkit. It provides a seamless and powerful experience for capturing thoughts, organizing projects, and enhancing creativity with AI-driven tools.
-
-
 
 ## Core Features
 
@@ -26,7 +24,6 @@ This project is a feature-rich, intelligent note-taking application built with N
 - **Rich Text Editor:** A robust editor with specialized fields that adapt to the selected notebook type.
 - **Authentication:** Secure user login and signup functionality using Firebase Authentication (Email/Password and Google).
 - **Dashboard:** A central hub to get a quick overview of your activity, recent notes, and notebook statistics.
-- **Subscription & Billing:** A complete billing system integrated with Stripe, including a pricing page and customer portal for managing subscriptions. Pro-tier features are gated.
 - **Customizable Themes:** Choose between Light, Dark, and the signature "Aurora" theme, with a smooth onboarding experience for new users.
 
 ## Tech Stack
@@ -35,7 +32,6 @@ This project is a feature-rich, intelligent note-taking application built with N
 - **UI:** React, ShadCN UI, Tailwind CSS
 - **AI:** Google Gemini via Genkit
 - **Backend & Database:** Firebase (Authentication, Firestore)
-- **Billing:** Stripe
 
 ## Getting Started: Local Development
 
@@ -75,5 +71,3 @@ Your application will be available at `http://localhost:9002` and the Genkit dev
 ## Deployment: Professional CI/CD Workflow
 
 This project is configured for a professional CI/CD (Continuous Integration/Continuous Deployment) workflow using Firebase App Hosting and GitHub.
-
-

@@ -38,7 +38,7 @@ export function SidebarNav() {
       <SidebarHeader>
         <div className="flex items-center gap-2 p-2">
             <BrainCircuit className="h-8 w-8 text-primary" />
-            <span className="text-lg font-semibold whitespace-nowrap group-data-[collapsible=icon]:hidden">Smart Notes</span>
+            <span className="text-lg font-semibold whitespace-nowrap group-data-[collapsible=icon]:hidden">Elevated Notes</span>
         </div>
       </SidebarHeader>
       <SidebarContent>
