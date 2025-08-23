@@ -78,9 +78,6 @@ export function UserNav() {
           <DropdownMenuItem asChild>
             <Link href="/app/profile">Profile</Link>
           </DropdownMenuItem>
-           <DropdownMenuItem asChild>
-            <Link href="/app/pricing">Billing</Link>
-          </DropdownMenuItem>
           <DropdownMenuItem asChild>
             <Link href="/app/settings">Settings</Link>
           </DropdownMenuItem>
