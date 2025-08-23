@@ -127,11 +127,10 @@ export function Editor({ note }: EditorProps) {
   const handleAiAction = async (
     action: (input: any) => Promise<any>,
     input: any,
-    messages: { loading: string, success: string, error: string },
-    useContent = true
+    messages: { loading: string, success: string, error: string }
   ) => {
     const textToProcess = content || projectIdeas;
-     if (useContent && !textToProcess) {
+     if (!textToProcess) {
       toast({
         variant: 'destructive',
         title: 'Cannot perform action',
@@ -180,7 +179,7 @@ export function Editor({ note }: EditorProps) {
     toast({ title: 'Generating outline...' });
     try {
       const { outline } = await generateOutline({ title });
-      setContent((prev) => prev + '\n\n' + outline);
+      setContent((prev) => (prev ? prev + '\n\n' : '') + outline);
       toast({ title: 'Outline generated!' });
     } catch (error) {
       console.error('Outline error:', error);
