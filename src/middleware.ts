@@ -1,24 +1,39 @@
+
 import { NextResponse, type NextRequest } from 'next/server';
+import { auth } from 'firebase-admin';
+import { initAdminSDK } from './lib/firebase/firebase-admin';
+
+initAdminSDK();
+
+async function verifySessionCookie(request: NextRequest) {
+  const sessionCookie = request.cookies.get('session')?.value;
+  if (!sessionCookie) {
+    return null;
+  }
+  try {
+    const decodedToken = await auth().verifySessionCookie(sessionCookie, true);
+    return decodedToken;
+  } catch (error) {
+    return null;
+  }
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  const decodedToken = await verifySessionCookie(request);
+  const isAuthenticated = !!decodedToken;
+
+  if (pathname.startsWith('/app') && !isAuthenticated) {
+    const loginUrl = new URL('/login', request.url);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  if ((pathname === '/login' || pathname === '/signup') && isAuthenticated) {
+    const appUrl = new URL('/app', request.url);
+    return NextResponse.redirect(appUrl);
+  }
   
-  // The token check is handled by the client-side AuthProvider and AppLayout
-  // This middleware is now only responsible for basic routing logic
-  // if the user is already on a page that requires auth.
-  // The actual redirect for unauthenticated users happens on the client.
-
-  if (pathname === '/login' || pathname === '/signup') {
-    // Let the user access login/signup pages
-    return NextResponse.next();
-  }
-
-  if (pathname.startsWith('/app')) {
-    // Let the client-side auth check handle redirection
-    // for the app routes.
-    return NextResponse.next();
-  }
-
   return NextResponse.next();
 }
 

@@ -1,4 +1,3 @@
-'use client';
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -13,11 +12,9 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel"
 import { formatDistanceToNow } from 'date-fns';
-import { useAuth } from '@/lib/firebase/auth-provider';
-import { getNotes } from '@/lib/firebase/firestore';
-import { useEffect, useState, useMemo } from 'react';
 import type { Note, Notebook } from '@/lib/types';
-import { Skeleton } from '@/components/ui/skeleton';
+import { getDashboardData, getGreeting } from '@/lib/firebase/firestore-server';
+
 
 const notebooks: Notebook[] = [
   {
@@ -46,68 +43,8 @@ const notebooks: Notebook[] = [
   },
 ];
 
-const getGreeting = () => {
-  const hours = new Date().getHours();
-  if (hours < 12) return 'Good morning';
-  if (hours < 18) return 'Good afternoon';
-  return 'Good evening';
-};
-
-export function Dashboard() {
-  const { user } = useAuth();
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (user) {
-      getNotes(user.uid).then((userNotes) => {
-        setNotes(userNotes);
-        setLoading(false);
-      });
-    } else if (user === null) {
-      setLoading(false);
-    }
-  }, [user]);
-
-  const { stats, recentNotes, userName } = useMemo(() => {
-    if (!user || notes.length === 0) {
-      return {
-        userName: user?.displayName || 'User',
-        stats: { totalNotes: 0, notesThisWeek: 0, mostActiveNotebookId: null, notebookCounts: {} },
-        recentNotes: []
-      };
-    }
-    
-    const aWeekAgo = new Date();
-    aWeekAgo.setDate(aWeekAgo.getDate() - 7);
-
-    const notesThisWeek = notes.filter(n => (n.createdAt as Date) > aWeekAgo).length;
-    const totalNotes = notes.length;
-
-    const notebookCounts: Record<string, number> = {};
-    notes.forEach(note => {
-      notebookCounts[note.notebookId] = (notebookCounts[note.notebookId] || 0) + 1;
-    });
-
-    const mostActiveNotebookId = Object.keys(notebookCounts).length > 0
-      ? Object.entries(notebookCounts).sort((a, b) => b[1] - a[1])[0][0]
-      : null;
-
-    const sortedRecentNotes = [...notes]
-      .sort((a, b) => (b.updatedAt as Date).getTime() - (a.updatedAt as Date).getTime())
-      .slice(0, 5);
-      
-    return {
-      userName: user.displayName || 'User',
-      stats: {
-        totalNotes,
-        notesThisWeek,
-        mostActiveNotebookId,
-        notebookCounts,
-      },
-      recentNotes: sortedRecentNotes
-    };
-  }, [user, notes]);
+export async function Dashboard() {
+  const { userName, stats, recentNotes } = await getDashboardData();
   
   const mostActiveNotebookName = stats.mostActiveNotebookId
     ? notebooks.find(n => n.id === stats.mostActiveNotebookId)?.title
@@ -119,33 +56,6 @@ export function Dashboard() {
   }));
 
   const greeting = getGreeting();
-  
-  if (loading) {
-    return (
-       <div className="space-y-8">
-        <Skeleton className="h-9 w-1/2" />
-        <div className="grid gap-4 md:grid-cols-3">
-          {[...Array(3)].map((_, i) => (
-            <Card key={i}>
-              <CardHeader><Skeleton className="h-6 w-1/2" /></CardHeader>
-              <CardContent><Skeleton className="h-8 w-1/3" /></CardContent>
-            </Card>
-          ))}
-        </div>
-        <div>
-          <Skeleton className="h-8 w-1/4 mb-4" />
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {[...Array(3)].map((_, i) => (
-               <Card key={i} className="h-40">
-                 <CardHeader><Skeleton className="h-6 w-full" /><Skeleton className="h-4 w-1/2 mt-2" /></CardHeader>
-                 <CardContent><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-2/3 mt-2" /></CardContent>
-               </Card>
-            ))}
-          </div>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="space-y-8">

@@ -12,12 +12,8 @@ const firebaseConfig = {
   appId: "1:962099069023:web:11bdff433b7ae8d53f9bea"
 };
 
-// Initialize Firebase
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
-// Due to a bug in the Firebase SDK, we need to initialize Firestore with memory cache
-// to avoid long-running save operations.
-// See: https://github.com/firebase/firebase-js-sdk/issues/7908
 const db = initializeFirestore(app, {
   localCache: memoryLocalCache(),
 });

@@ -22,12 +22,14 @@ async function getAuthenticatedUser() {
     const user = await auth().getUser(decodedToken.uid);
     return user;
   } catch (error) {
+    if ((error as any).code === 'auth/session-cookie-revoked' || (error as any).code === 'auth/invalid-session-cookie') {
+       return null;
+    }
     console.error('Error verifying session cookie or getting user:', error);
     return null;
   }
 }
 
-// Helper to convert Firestore doc to Note type
 const docToNote = (doc: FirebaseFirestore.DocumentSnapshot): Note => {
   const data = doc.data() as any;
   return {
@@ -62,18 +64,21 @@ export async function getDashboardData() {
 
   const aWeekAgo = new Date();
   aWeekAgo.setDate(aWeekAgo.getDate() - 7);
-  const notesThisWeekQuery = allNotesQuery.where('createdAt', '>=', aWeekAgo);
   
   const recentNotesQuery = allNotesQuery.orderBy('updatedAt', 'desc').limit(5);
 
-  const [allNotesSnapshot, notesThisWeekSnapshot, recentNotesSnapshot] = await Promise.all([
+  const [allNotesSnapshot, recentNotesSnapshot] = await Promise.all([
     allNotesQuery.get(),
-    notesThisWeekQuery.get(),
     recentNotesQuery.get(),
   ]);
+  
+  const notesThisWeekSnapshot = allNotesSnapshot.docs.filter(doc => {
+    const createdAt = (doc.data().createdAt as Timestamp).toDate();
+    return createdAt >= aWeekAgo;
+  });
 
   const totalNotes = allNotesSnapshot.size;
-  const notesThisWeek = notesThisWeekSnapshot.size;
+  const notesThisWeek = notesThisWeekSnapshot.length;
 
   const notebookCounts: Record<string, number> = {};
   allNotesSnapshot.docs.forEach(doc => {
