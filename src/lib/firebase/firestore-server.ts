@@ -1,29 +1,28 @@
 
-import 'server-only';
+'use server';
+
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { cookies } from 'next/headers';
-import { getApp as getAdminApp } from 'firebase-admin/app';
-import { auth } from 'firebase-admin';
-import { initAdminSDK } from './firebase-admin';
+import { auth as adminAuth } from 'firebase-admin';
+import { app as adminApp } from './firebase-admin'; // Use the initialized app
 import type { Note } from '@/lib/types';
 
-initAdminSDK();
-const db = getFirestore(getAdminApp());
+// This function now uses the pre-initialized adminApp
+const db = getFirestore(adminApp);
 const notesCollection = db.collection('notes');
 
 async function getAuthenticatedUser() {
   try {
-    const cookieStore = cookies();
-    const sessionCookie = cookieStore.get('session')?.value;
+    const sessionCookie = cookies().get('session')?.value;
     if (!sessionCookie) {
       return null;
     }
-    const decodedToken = await auth().verifySessionCookie(sessionCookie, true);
-    const user = await auth().getUser(decodedToken.uid);
+    const decodedToken = await adminAuth(adminApp).verifySessionCookie(sessionCookie, true);
+    const user = await adminAuth(adminApp).getUser(decodedToken.uid);
     return user;
   } catch (error) {
     if ((error as any).code === 'auth/session-cookie-revoked' || (error as any).code === 'auth/invalid-session-cookie') {
-       return null;
+      return null;
     }
     console.error('Error verifying session cookie or getting user:', error);
     return null;
