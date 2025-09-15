@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.0.0",
     "@genkit-ai/firebase": "^1.17.0",
     "@genkit-ai/googleai": "^1.17.0",
     "@genkit-ai/next": "^1.17.0",

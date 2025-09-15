@@ -1,7 +1,7 @@
 
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, initializeFirestore, memoryLocalCache } from 'firebase/firestore';
+import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: "AIzaSyDqWYizk35mU4TxD5N5rW4jL7MmMLHKjjA",
@@ -15,12 +15,8 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
-// Due to a bug in the Firebase SDK, we need to initialize Firestore with memory cache
-// to avoid long-running save operations.
-// See: https://github.com/firebase/firebase-js-sdk/issues/7908
-const db = initializeFirestore(app, {
-  localCache: memoryLocalCache(),
-});
+// Initialize Firestore with default settings for better performance
+const db = getFirestore(app);
 
 const auth = getAuth(app);
 

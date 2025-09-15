@@ -14,8 +14,9 @@ import {
 } from "@/components/ui/carousel"
 import { formatDistanceToNow } from 'date-fns';
 import { useAuth } from '@/lib/firebase/auth-provider';
-import { getNotes } from '@/lib/firebase/firestore';
-import { useEffect, useState, useMemo } from 'react';
+import { getRecentNotes } from '@/lib/firebase/firestore';
+import { useMemo, memo, Suspense } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import type { Note, Notebook } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -53,21 +54,15 @@ const getGreeting = () => {
   return 'Good evening';
 };
 
-export function Dashboard() {
+const Dashboard = memo(function Dashboard() {
   const { user } = useAuth();
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (user) {
-      getNotes(user.uid).then((userNotes) => {
-        setNotes(userNotes);
-        setLoading(false);
-      });
-    } else if (user === null) {
-      setLoading(false);
-    }
-  }, [user]);
+  
+  const { data: notes = [], isLoading: loading } = useQuery({
+    queryKey: ['dashboard-notes', user?.uid],
+    queryFn: () => user ? getRecentNotes(user.uid, 10) : [],
+    enabled: !!user,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  });
 
   const { stats, recentNotes, userName } = useMemo(() => {
     if (!user || notes.length === 0) {
@@ -290,4 +285,6 @@ export function Dashboard() {
       </div>
     </div>
   );
-}
+});
+
+export { Dashboard };
