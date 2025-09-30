@@ -29,4 +29,4 @@ function createAdminApp(): App {
   }
 }
 
-export const getAdminApp = () => createAdminApp();
+export const getAdminApp = async () => createAdminApp();
