@@ -1,5 +1,3 @@
-'use server';
-
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { cookies } from 'next/headers';
 import { auth as adminAuth } from 'firebase-admin';

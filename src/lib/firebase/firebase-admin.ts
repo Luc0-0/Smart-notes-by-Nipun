@@ -1,4 +1,3 @@
-'use server';
 
 import { getApp, getApps, initializeApp, cert, App } from 'firebase-admin/app';
 
@@ -31,6 +30,4 @@ function createAdminApp(): App {
   }
 }
 
-export function getAdminApp() {
-  return createAdminApp();
-}
+export const getAdminApp = () => createAdminApp();
