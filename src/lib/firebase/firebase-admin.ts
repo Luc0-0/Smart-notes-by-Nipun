@@ -1,13 +1,12 @@
-
 import { getApp, getApps, initializeApp, cert, App } from 'firebase-admin/app';
 
 // This function ensures a single instance of the Firebase Admin app is initialized and reused.
 function createAdminApp(): App {
-  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-
   if (getApps().some((app) => app.name === 'admin')) {
     return getApp('admin');
   }
+
+  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
   if (!serviceAccountKey) {
     console.warn(

@@ -1,3 +1,4 @@
+'use client';
 import { Suspense } from 'react';
 import { Dashboard } from '@/components/dashboard';
 import { Skeleton } from '@/components/ui/skeleton';

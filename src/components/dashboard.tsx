@@ -1,3 +1,4 @@
+'use client';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -12,8 +13,10 @@ import {
 } from "@/components/ui/carousel"
 import { formatDistanceToNow } from 'date-fns';
 import type { Note, Notebook } from '@/lib/types';
-import { getDashboardData, getGreeting } from '@/lib/firebase/firestore-server';
-
+import { useEffect, useState } from 'react';
+import { getNotes } from '@/lib/firebase/firestore';
+import { useAuth } from '@/lib/firebase/auth-provider';
+import { Skeleton } from './ui/skeleton';
 
 const notebooks: Notebook[] = [
   {
@@ -42,19 +45,106 @@ const notebooks: Notebook[] = [
   },
 ];
 
-export async function Dashboard() {
-  const { userName, stats, recentNotes } = await getDashboardData();
-  
+const getGreeting = () => {
+  const hours = new Date().getHours();
+  if (hours < 12) return 'Good morning';
+  if (hours < 18) return 'Good afternoon';
+  return 'Good evening';
+};
+
+function DashboardLoadingSkeleton() {
+  return (
+    <div className="space-y-8">
+      <Skeleton className="h-9 w-1/2" />
+      <div className="grid gap-4 md:grid-cols-3">
+        {[...Array(3)].map((_, i) => (
+          <Card key={i}>
+            <CardHeader><Skeleton className="h-6 w-1/2" /></CardHeader>
+            <CardContent><Skeleton className="h-8 w-1/3" /></CardContent>
+          </Card>
+        ))}
+      </div>
+      <div>
+        <Skeleton className="h-8 w-1/4 mb-4" />
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {[...Array(3)].map((_, i) => (
+             <Card key={i} className="h-40">
+               <CardHeader><Skeleton className="h-6 w-full" /><Skeleton className="h-4 w-1/2 mt-2" /></CardHeader>
+               <CardContent><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-2/3 mt-2" /></CardContent>
+             </Card>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function Dashboard() {
+  const { user } = useAuth();
+  const [stats, setStats] = useState({ totalNotes: 0, notesThisWeek: 0, mostActiveNotebookId: null, notebookCounts: {} });
+  const [recentNotes, setRecentNotes] = useState<Note[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      const fetchDashboardData = async () => {
+        setLoading(true);
+        const allNotes = await getNotes(user.uid);
+        
+        const aWeekAgo = new Date();
+        aWeekAgo.setDate(aWeekAgo.getDate() - 7);
+        const notesThisWeek = allNotes.filter(note => {
+            const createdAt = new Date(note.createdAt as Date);
+            return createdAt >= aWeekAgo;
+        }).length;
+
+        const notebookCounts: Record<string, number> = {};
+        allNotes.forEach(note => {
+            if (note.notebookId) {
+                notebookCounts[note.notebookId] = (notebookCounts[note.notebookId] || 0) + 1;
+            }
+        });
+
+        const mostActiveNotebookId = Object.keys(notebookCounts).length > 0
+            ? Object.entries(notebookCounts).sort((a, b) => b[1] - a[1])[0][0]
+            : null;
+
+        setStats({
+            totalNotes: allNotes.length,
+            notesThisWeek,
+            mostActiveNotebookId: mostActiveNotebookId as any,
+            notebookCounts,
+        });
+
+        const sortedNotes = allNotes.sort((a, b) => {
+            const dateA = new Date(a.updatedAt as Date).getTime();
+            const dateB = new Date(b.updatedAt as Date).getTime();
+            return dateB - dateA;
+        });
+
+        setRecentNotes(sortedNotes.slice(0, 5));
+        setLoading(false);
+      };
+      fetchDashboardData();
+    }
+  }, [user]);
+
+  if (loading) {
+    return <DashboardLoadingSkeleton />;
+  }
+
   const mostActiveNotebookName = stats.mostActiveNotebookId
     ? notebooks.find(n => n.id === stats.mostActiveNotebookId)?.title
     : 'N/A';
   
   const chartData = notebooks.map(nb => ({
     name: nb.title,
+    // @ts-ignore
     total: stats.notebookCounts[nb.id] || 0,
   }));
 
   const greeting = getGreeting();
+  const userName = user?.displayName || 'User';
 
   return (
     <div className="space-y-8">
@@ -156,6 +246,7 @@ export async function Dashboard() {
                                 {notebook.icon}
                                 <div>
                                     <CardTitle className="text-lg">{notebook.title}</CardTitle>
+                                    {/* @ts-ignore */}
                                     <p className="text-sm text-muted-foreground">{stats.notebookCounts[notebook.id] || 0} notes</p>
                                 </div>
                             </div>
