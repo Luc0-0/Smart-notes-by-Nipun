@@ -1,3 +1,4 @@
+
 import { NextResponse, type NextRequest } from 'next/server';
 import { auth as adminAuth } from 'firebase-admin';
 import { getAdminApp } from '@/lib/firebase/firebase-admin';
@@ -29,6 +30,6 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Session login error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 401 });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
