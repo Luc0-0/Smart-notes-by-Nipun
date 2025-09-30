@@ -3,6 +3,7 @@ import { auth as adminAuth } from 'firebase-admin';
 import { getAdminApp } from '@/lib/firebase/firebase-admin';
 
 export async function POST(request: NextRequest) {
+  // Ensure the admin app is initialized before using it.
   const adminApp = getAdminApp();
   try {
     const { idToken } = await request.json();

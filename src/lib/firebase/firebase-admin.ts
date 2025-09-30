@@ -1,18 +1,20 @@
-import { getApp, getApps, initializeApp, cert } from 'firebase-admin/app';
+'use server';
 
-function initAdminSDK() {
+import { getApp, getApps, initializeApp, cert, App } from 'firebase-admin/app';
+
+// This function ensures a single instance of the Firebase Admin app is initialized and reused.
+function createAdminApp(): App {
   const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
-  if (getApps().some(app => app.name === 'admin')) {
+  if (getApps().some((app) => app.name === 'admin')) {
     return getApp('admin');
   }
 
   if (!serviceAccountKey) {
-    // In a local environment, we can initialize without credentials to access some features.
-    // For production, this key is essential.
     console.warn(
       "Firebase Admin SDK not fully initialized. Set FIREBASE_SERVICE_ACCOUNT_KEY env variable for production features."
     );
+    // Initialize without credentials for local dev or limited functionality environments
     return initializeApp({}, 'admin');
   }
   
@@ -24,9 +26,11 @@ function initAdminSDK() {
     }, 'admin');
   } catch (error) {
     console.error("Error initializing Firebase Admin SDK with service account:", error);
-    // Fallback initialization
+    // Fallback to default initialization on error
     return initializeApp({}, 'admin');
   }
 }
 
-export const getAdminApp = () => initAdminSDK();
+export function getAdminApp() {
+  return createAdminApp();
+}
