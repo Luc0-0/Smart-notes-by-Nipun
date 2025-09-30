@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -419,7 +418,7 @@ export function Editor({ note }: EditorProps) {
             placeholder="Untitled Note"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="text-2xl font-bold border-none shadow-none focus-visible:ring-0 h-auto px-2 font-headline bg-transparent"
+            className="text-2xl font-bold border-none shadow-none focus-visible:ring-0 h-auto p-2 font-headline bg-transparent"
             disabled={isAiLoading || isSaving}
           />
           <div className="flex items-center gap-2 self-end sm:self-center">

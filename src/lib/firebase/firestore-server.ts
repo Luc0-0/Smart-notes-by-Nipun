@@ -1,17 +1,13 @@
-
 'use server';
 
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { cookies } from 'next/headers';
 import { auth as adminAuth } from 'firebase-admin';
-import { app as adminApp } from './firebase-admin'; // Use the initialized app
+import { getAdminApp } from './firebase-admin';
 import type { Note } from '@/lib/types';
 
-// This function now uses the pre-initialized adminApp
-const db = getFirestore(adminApp);
-const notesCollection = db.collection('notes');
-
 async function getAuthenticatedUser() {
+  const adminApp = getAdminApp();
   try {
     const sessionCookie = cookies().get('session')?.value;
     if (!sessionCookie) {
@@ -21,10 +17,7 @@ async function getAuthenticatedUser() {
     const user = await adminAuth(adminApp).getUser(decodedToken.uid);
     return user;
   } catch (error) {
-    if ((error as any).code === 'auth/session-cookie-revoked' || (error as any).code === 'auth/invalid-session-cookie') {
-      return null;
-    }
-    console.error('Error verifying session cookie or getting user:', error);
+    // This can happen if the cookie is expired or invalid. It's not a server error.
     return null;
   }
 }
@@ -48,7 +41,11 @@ export function getGreeting() {
 }
 
 export async function getDashboardData() {
+  const adminApp = getAdminApp();
+  const db = getFirestore(adminApp);
+  const notesCollection = db.collection('notes');
   const user = await getAuthenticatedUser();
+  
   if (!user?.uid) {
     return { 
       userName: 'User',
@@ -82,7 +79,9 @@ export async function getDashboardData() {
   const notebookCounts: Record<string, number> = {};
   allNotesSnapshot.docs.forEach(doc => {
     const note = doc.data() as Note;
-    notebookCounts[note.notebookId] = (notebookCounts[note.notebookId] || 0) + 1;
+    if (note.notebookId) {
+      notebookCounts[note.notebookId] = (notebookCounts[note.notebookId] || 0) + 1;
+    }
   });
 
   const mostActiveNotebookId = Object.keys(notebookCounts).length > 0

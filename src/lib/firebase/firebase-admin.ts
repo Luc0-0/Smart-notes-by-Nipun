@@ -1,30 +1,32 @@
-
 import { getApp, getApps, initializeApp, cert } from 'firebase-admin/app';
 
-const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+function initAdminSDK() {
+  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
-let adminApp;
+  if (getApps().some(app => app.name === 'admin')) {
+    return getApp('admin');
+  }
 
-if (getApps().length === 0) {
-  if (serviceAccountKey) {
-    try {
-      const serviceAccountJson = Buffer.from(serviceAccountKey, 'base64').toString('utf-8');
-      const serviceAccount = JSON.parse(serviceAccountJson);
-      adminApp = initializeApp({
-        credential: cert(serviceAccount),
-      });
-    } catch (error) {
-      console.error("Error initializing Firebase Admin SDK with service account:", error);
-      adminApp = initializeApp();
-    }
-  } else {
+  if (!serviceAccountKey) {
+    // In a local environment, we can initialize without credentials to access some features.
+    // For production, this key is essential.
     console.warn(
       "Firebase Admin SDK not fully initialized. Set FIREBASE_SERVICE_ACCOUNT_KEY env variable for production features."
     );
-    adminApp = initializeApp();
+    return initializeApp({}, 'admin');
   }
-} else {
-  adminApp = getApp();
+  
+  try {
+    const serviceAccountJson = Buffer.from(serviceAccountKey, 'base64').toString('utf-8');
+    const serviceAccount = JSON.parse(serviceAccountJson);
+    return initializeApp({
+      credential: cert(serviceAccount),
+    }, 'admin');
+  } catch (error) {
+    console.error("Error initializing Firebase Admin SDK with service account:", error);
+    // Fallback initialization
+    return initializeApp({}, 'admin');
+  }
 }
 
-export const app = adminApp;
+export const getAdminApp = () => initAdminSDK();

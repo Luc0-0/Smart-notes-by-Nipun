@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -149,8 +148,8 @@ export function NoteList({ isArchive = false, searchQuery = '' }: NoteListProps)
             setLoading(true);
             getNotes(user.uid).then((userNotes) => {
                 const sortedNotes = userNotes.sort((a, b) => {
-                    const dateA = a.updatedAt instanceof Date ? a.updatedAt.getTime() : a.updatedAt.toMillis();
-                    const dateB = b.updatedAt instanceof Date ? b.updatedAt.getTime() : b.updatedAt.toMillis();
+                    const dateA = a.updatedAt instanceof Date ? a.updatedAt.getTime() : (a.updatedAt as any).toMillis();
+                    const dateB = b.updatedAt instanceof Date ? b.updatedAt.getTime() : (b.updatedAt as any).toMillis();
                     return dateB - dateA;
                 });
                 setNotes(sortedNotes);

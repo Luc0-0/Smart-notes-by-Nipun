@@ -1,9 +1,9 @@
-
 import { NextResponse, type NextRequest } from 'next/server';
 import { auth as adminAuth } from 'firebase-admin';
-import { app as adminApp } from '@/lib/firebase/firebase-admin'; // Use the initialized app
+import { getAdminApp } from '@/lib/firebase/firebase-admin';
 
 export async function GET(request: NextRequest) {
+  const adminApp = getAdminApp();
   try {
     const sessionCookie = request.cookies.get('session')?.value;
     if (!sessionCookie) {

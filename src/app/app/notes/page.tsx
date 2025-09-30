@@ -1,4 +1,3 @@
-
 'use client';
 import { NoteList } from '@/components/note-list';
 import { Suspense } from 'react';
