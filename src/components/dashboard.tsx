@@ -12,10 +12,11 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel"
 import { formatDistanceToNow } from 'date-fns';
-import type { Note, Notebook } from '@/lib/types';
-import { useEffect, useState } from 'react';
-import { getNotes } from '@/lib/firebase/firestore';
 import { useAuth } from '@/lib/firebase/auth-provider';
+import { getNotes } from '@/lib/firebase/firestore';
+import { useMemo, memo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import type { Note, Notebook } from '@/lib/types';
 import { Skeleton } from './ui/skeleton';
 
 const notebooks: Notebook[] = [
@@ -79,55 +80,58 @@ function DashboardLoadingSkeleton() {
   );
 }
 
-export function Dashboard() {
+const Dashboard = memo(function Dashboard() {
   const { user } = useAuth();
-  const [stats, setStats] = useState({ totalNotes: 0, notesThisWeek: 0, mostActiveNotebookId: null, notebookCounts: {} });
-  const [recentNotes, setRecentNotes] = useState<Note[]>([]);
-  const [loading, setLoading] = useState(true);
+  
+  const { data: allNotes = [], isLoading: loading } = useQuery({
+    queryKey: ['all-notes', user?.uid],
+    queryFn: () => user ? getNotes(user.uid) : Promise.resolve([]),
+    enabled: !!user,
+  });
 
-  useEffect(() => {
-    if (user) {
-      const fetchDashboardData = async () => {
-        setLoading(true);
-        const allNotes = await getNotes(user.uid);
-        
-        const aWeekAgo = new Date();
-        aWeekAgo.setDate(aWeekAgo.getDate() - 7);
-        const notesThisWeek = allNotes.filter(note => {
-            const createdAt = new Date(note.createdAt as Date);
-            return createdAt >= aWeekAgo;
-        }).length;
-
-        const notebookCounts: Record<string, number> = {};
-        allNotes.forEach(note => {
-            if (note.notebookId) {
-                notebookCounts[note.notebookId] = (notebookCounts[note.notebookId] || 0) + 1;
-            }
-        });
-
-        const mostActiveNotebookId = Object.keys(notebookCounts).length > 0
-            ? Object.entries(notebookCounts).sort((a, b) => b[1] - a[1])[0][0]
-            : null;
-
-        setStats({
-            totalNotes: allNotes.length,
-            notesThisWeek,
-            mostActiveNotebookId: mostActiveNotebookId as any,
-            notebookCounts,
-        });
-
-        const sortedNotes = allNotes.sort((a, b) => {
-            const dateA = new Date(a.updatedAt as Date).getTime();
-            const dateB = new Date(b.updatedAt as Date).getTime();
-            return dateB - dateA;
-        });
-
-        setRecentNotes(sortedNotes.slice(0, 5));
-        setLoading(false);
+  const { stats, recentNotes } = useMemo(() => {
+    if (!allNotes || allNotes.length === 0) {
+      return {
+        stats: { totalNotes: 0, notesThisWeek: 0, mostActiveNotebookId: null, notebookCounts: {} },
+        recentNotes: []
       };
-      fetchDashboardData();
     }
-  }, [user]);
+
+    const aWeekAgo = new Date();
+    aWeekAgo.setDate(aWeekAgo.getDate() - 7);
+    const notesThisWeek = allNotes.filter(note => {
+        const createdAt = new Date(note.createdAt as Date);
+        return createdAt >= aWeekAgo;
+    }).length;
+
+    const notebookCounts: Record<string, number> = {};
+    allNotes.forEach(note => {
+        if (note.notebookId) {
+            notebookCounts[note.notebookId] = (notebookCounts[note.notebookId] || 0) + 1;
+        }
+    });
+
+    const mostActiveNotebookId = Object.keys(notebookCounts).length > 0
+        ? Object.entries(notebookCounts).sort((a, b) => b[1] - a[1])[0][0]
+        : null;
+
+    const calculatedStats = {
+        totalNotes: allNotes.length,
+        notesThisWeek,
+        mostActiveNotebookId: mostActiveNotebookId as any,
+        notebookCounts,
+    };
+
+    const sortedNotes = [...allNotes].sort((a, b) => {
+        const dateA = new Date(a.updatedAt as Date).getTime();
+        const dateB = new Date(b.updatedAt as Date).getTime();
+        return dateB - dateA;
+    });
+
+    const calculatedRecentNotes = sortedNotes.slice(0, 5);
+
+    return { stats: calculatedStats, recentNotes: calculatedRecentNotes };
+  }, [allNotes]);
 
   if (loading) {
     return <DashboardLoadingSkeleton />;
@@ -290,4 +294,6 @@ export function Dashboard() {
       </div>
     </div>
   );
-}
+});
+
+export { Dashboard };

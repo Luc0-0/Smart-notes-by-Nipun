@@ -1,6 +1,6 @@
 'use client';
 import { Suspense } from 'react';
-import { Dashboard } from '@/components/dashboard';
+import { LazyDashboard } from '@/components/lazy-components';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 
@@ -34,7 +34,7 @@ function DashboardLoadingSkeleton() {
 export default function AppPage() {
   return (
     <Suspense fallback={<DashboardLoadingSkeleton />}>
-      <Dashboard />
+      <LazyDashboard />
     </Suspense>
   );
 }

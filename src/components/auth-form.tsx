@@ -114,6 +114,7 @@ export function AuthForm({ type }: { type: AuthFormType }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={isLoading}
+              autoComplete="email"
             />
           </div>
           <div className="space-y-2">
@@ -125,6 +126,7 @@ export function AuthForm({ type }: { type: AuthFormType }) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={isLoading}
+              autoComplete={type === 'login' ? 'current-password' : 'new-password'}
             />
           </div>
         </CardContent>

@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/lib/firebase/auth-provider';
 import { getNotes, addNote } from '@/lib/firebase/firestore';
 import type { Note } from '@/lib/types';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, memo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import { generateNoteStarter } from '@/ai/flows/note-starter-flow';
@@ -130,7 +130,7 @@ type NoteListProps = {
   searchQuery?: string;
 };
 
-export function NoteList({ isArchive = false, searchQuery = '' }: NoteListProps) {
+const NoteList = memo(function NoteList({ isArchive = false, searchQuery = '' }: NoteListProps) {
     const { user } = useAuth();
     const searchParams = useSearchParams();
     const pathname = usePathname();
@@ -155,6 +155,8 @@ export function NoteList({ isArchive = false, searchQuery = '' }: NoteListProps)
                 setNotes(sortedNotes);
                 const uniqueTags = [...new Set(sortedNotes.flatMap(note => note.tags || []))];
                 setAllTags(uniqueTags.sort());
+                setLoading(false);
+            }).catch(() => {
                 setLoading(false);
             });
         }
@@ -306,4 +308,6 @@ export function NoteList({ isArchive = false, searchQuery = '' }: NoteListProps)
             )}
         </div>
     );
-}
+});
+
+export { NoteList };
