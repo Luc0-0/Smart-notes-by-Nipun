@@ -12,6 +12,7 @@ import { auth } from './config';
 
 async function handleAuthSuccess(user: User) {
   const idToken = await user.getIdToken();
+  // This fetch call creates the server-side session cookie
   await fetch('/api/auth/login', {
     method: 'POST',
     headers: {
